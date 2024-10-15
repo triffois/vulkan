@@ -1,0 +1,2 @@
+/home/kaba4ok/Documents/oles_territory/studies_in_Lviv/year3/sem1/os/project/vulkan_basic/glsl_stuff/bin/glslc shader.vert -o vert.spv
+/home/kaba4ok/Documents/oles_territory/studies_in_Lviv/year3/sem1/os/project/vulkan_basic/glsl_stuff/bin/glslc shader.frag -o frag.spv
