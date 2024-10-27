@@ -1,3 +1,5 @@
+#pragma once
+
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -16,12 +18,14 @@
 #include <chrono>
 #include <vector>
 #include <cstring>
-#include <cstdlib>
 #include <cstdint>
 #include <limits>
 #include <array>
 #include <optional>
 #include <set>
+
+#include "Camera.h"
+#include "EnginePeripherals.h"
 
 const uint32_t WIDTH = 800;
 const uint32_t HEIGHT = 600;
@@ -132,7 +136,7 @@ const std::vector<uint16_t> indices = {
     4, 5, 6, 6, 7, 4
 };
 
-class HelloTriangleApplication {
+class Engine {
 public:
     void run() {
         initWindow();
@@ -198,6 +202,9 @@ private:
 
     bool framebufferResized = false;
 
+    EnginePeripheralsManager peripheralsManager;
+    Camera mainCamera{0,0,2,0,1,0,90,0};
+
     void initWindow() {
         glfwInit();
 
@@ -206,10 +213,63 @@ private:
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
         glfwSetWindowUserPointer(window, this);
         glfwSetFramebufferSizeCallback(window, framebufferResizeCallback);
+
+        glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+        glfwSetCursorPosCallback(window, cursorPosCallback);
+        glfwSetScrollCallback(window, scrollCallback);
+    }
+
+    void processKeyboardInput() {
+        if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+            if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+                mainCamera.ProcessKeyboard(Camera_Movement::NW, Time::deltaTime());
+            }else if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                mainCamera.ProcessKeyboard(Camera_Movement::NE, Time::deltaTime());
+            }else {
+                mainCamera.ProcessKeyboard(Camera_Movement::FORWARD, Time::deltaTime());
+            }
+            return;
+        }
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+            if(glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+                mainCamera.ProcessKeyboard(Camera_Movement::SW, Time::deltaTime());
+            }else if(glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+                mainCamera.ProcessKeyboard(Camera_Movement::SE, Time::deltaTime());
+            }else {
+                mainCamera.ProcessKeyboard(Camera_Movement::BACKWARD, Time::deltaTime());
+            }
+            return;
+        }
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
+            mainCamera.ProcessKeyboard(Camera_Movement::LEFT, Time::deltaTime());
+        }
+        if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
+            mainCamera.ProcessKeyboard(Camera_Movement::RIGHT, Time::deltaTime());
+        }
+    }
+
+    static void cursorPosCallback(GLFWwindow* window, double xpos, double ypos)
+    {
+        static float lastCursorPosX{WIDTH / 2.0};
+        static float lastCursorPosY{HEIGHT / 2.0};
+
+        float dX = xpos - lastCursorPosX;
+        float dY = ypos - lastCursorPosY;
+        lastCursorPosX = xpos;
+        lastCursorPosY = ypos;
+
+        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+        app->mainCamera.ProcessMouseMovement(dX, dY);
+    }
+
+    static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+    {
+        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
+        app->mainCamera.ProcessMouseScroll(yoffset);
     }
 
     static void framebufferResizeCallback(GLFWwindow* window, int width, int height) {
-        auto app = reinterpret_cast<HelloTriangleApplication*>(glfwGetWindowUserPointer(window));
+        auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
         app->framebufferResized = true;
     }
 
@@ -242,6 +302,8 @@ private:
     void mainLoop() {
         while (!glfwWindowShouldClose(window)) {
             glfwPollEvents();
+            peripheralsManager.updatePeripheralsOnFrame();
+            processKeyboardInput();
             drawFrame();
         }
 
@@ -1283,12 +1345,12 @@ private:
         float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
         UniformBufferObject ubo{};
-        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.model = glm::rotate(ubo.model, time * glm::radians(45.0f), glm::vec3(1.0f, 1.0f, 0.0f));
+        ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f), glm::vec3(0.0f, 0.0f, 1.0f));
+        ubo.model = glm::rotate(ubo.model, time * glm::radians(15.0f), glm::vec3(1.0f, 1.0f, 0.0f));
         ubo.model = glm::scale(ubo.model,glm::vec3(1.0f + std::sin(time), 1.0f + std::sin(time/2), 1.0f));
 
-        ubo.view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-        ubo.proj = glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
+        ubo.view = mainCamera.GetViewMatrix();
+        ubo.proj = glm::perspective(glm::radians(mainCamera.getZoom()), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 10.0f);
         ubo.proj[1][1] *= -1;
 
         memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
@@ -1563,16 +1625,3 @@ private:
         return VK_FALSE;
     }
 };
-
-int main() {
-    HelloTriangleApplication app;
-
-    try {
-        app.run();
-    } catch (const std::exception& e) {
-        std::cerr << e.what() << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    return EXIT_SUCCESS;
-}

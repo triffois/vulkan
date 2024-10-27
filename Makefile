@@ -1,13 +1,14 @@
 LDFLAGS = -lglfw -lvulkan -ldl -lpthread -lX11 -lXxf86vm -lXrandr -lXi
-STB_INCLUDE_PATH = $(PWD)
-CFLAGS = -std=c++17 -I$(STB_INCLUDE_PATH) -O2 -DNDEBUG
+INCLUDE_PATH = $(PWD)/include
+CFLAGS = -std=c++17 -I$(INCLUDE_PATH) -O2 -DNDEBUG
+SRC=$(PWD)/src/*
 
-VulkanTest: main.cpp
-	g++ $(CFLAGS) -o VulkanTest main.cpp $(LDFLAGS)
+VulkanTest: $(SRC)
+	g++ $(CFLAGS) -o VulkanTest ${SRC} $(LDFLAGS)
 
 .PHONY: test clean
 
-test: VulkanTest
+test: clean VulkanTest
 	./VulkanTest
 
 clean:
