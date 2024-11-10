@@ -1,14 +1,12 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <GLFW/glfw3.h>
 
-struct CleanUpContex{
-    VkInstance *appInstance;
-    VkDevice *appDevice;
-};
+#include "commonstructs.h"
 
 class INeedCleanUp {
 public:
-    virtual void cleanUp(const CleanUpContex &context) = 0;
+    virtual void cleanUp(const AppContext &context) = 0;
     virtual ~INeedCleanUp() = default;
 };

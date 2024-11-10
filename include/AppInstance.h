@@ -3,19 +3,11 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
-#include "INeedCleanUp.h"
 #include <iostream>
 #include <vector>
 
-const std::vector<const char*> validationLayers = {
-    "VK_LAYER_KHRONOS_validation"
-};
-
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
+#include "INeedCleanUp.h"
+#include "ValidationLayersInfo.h"
 
 class AppInstance : public INeedCleanUp {
 
@@ -31,10 +23,13 @@ public:
     AppInstance& operator=(AppInstance&& ) = delete;
 
     const VkInstance *getInstance() const;
-    void setAppDevice(VkDevice *appDevice);
+
+    void setAppDevice(const VkDevice *appDevice);
+    void setAppWindow(const GLFWwindow *window);
+
     void cleanUpAll();
     void addComponentToCleanUp(INeedCleanUp *componentToCleanUp, int order = -1);
-    void cleanUp(const CleanUpContex &context) override;
+    void cleanUp(const AppContext &context) override;
 
 private:
 
@@ -54,8 +49,9 @@ private:
 
 private:
     VkInstance instance;
-    VkDebugUtilsMessengerEXT debugMessenger;
-    VkDevice *appDevice{};
+    const VkDevice *appDevice{};
+    const GLFWwindow *appWindow{};
 
-     std::vector<INeedCleanUp *> componentsToCleanUp;
+    VkDebugUtilsMessengerEXT debugMessenger;
+    std::vector<INeedCleanUp *> componentsToCleanUp;
 };

@@ -21,9 +21,9 @@ public:
     AppWindow& operator=(const AppWindow& ) = delete;
     AppWindow& operator=(AppWindow&& ) = delete;
 
-    GLFWwindow *getWindow();
-    VkSurfaceKHR *getTargetSurface();
-    void cleanUp(const CleanUpContex &context) override;
+    [[nodiscard]] GLFWwindow *getWindow() const;
+    [[nodiscard]] VkSurfaceKHR getTargetSurface() const;
+    void cleanUp(const AppContext &context) override;
 
 private:
     void initializeWindow(AppInstance *appInstance, ResizeCallback windowResizeCallback);

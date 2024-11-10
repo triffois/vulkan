@@ -22,6 +22,7 @@ set(SOURCES
     src/AppWindow.cpp
     src/Engine.cpp
     src/Time.cpp
+    src/Device.cpp
 )
 
 add_executable(Triangle ${SOURCES})

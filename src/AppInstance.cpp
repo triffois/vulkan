@@ -13,14 +13,18 @@ const VkInstance *AppInstance::getInstance() const {
     return &instance;
 }
 
-void AppInstance::setAppDevice(VkDevice *appDevice) {
+void AppInstance::setAppDevice(const VkDevice *appDevice) {
     this->appDevice = appDevice;
 }
 
-void AppInstance::cleanUpAll() {
-    CleanUpContex currentCleanUpContext{&instance, appDevice};
+void AppInstance::setAppWindow(const GLFWwindow *window) {
+    appWindow = window;
+}
 
-    std::cout << componentsToCleanUp.size() << std::endl;
+void AppInstance::cleanUpAll() {
+    AppContext currentCleanUpContext{&instance, appDevice, appWindow};
+
+    assert(instance != nullptr && appDevice != nullptr && appWindow != nullptr);
 
     std::for_each(componentsToCleanUp.begin(), componentsToCleanUp.end(), [&currentCleanUpContext](auto component){component-> cleanUp(currentCleanUpContext);});
 }
@@ -147,7 +151,7 @@ void AppInstance::createInstance() {
     }
 }
 
-void AppInstance::cleanUp(const CleanUpContex &context) {
+void AppInstance::cleanUp(const AppContext &context) {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }

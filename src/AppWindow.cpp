@@ -29,7 +29,7 @@ static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     app->getCamera()->ProcessMouseScroll(yoffset);
 }
 
-void AppWindow::cleanUp(const CleanUpContex &context) {
+void AppWindow::cleanUp(const AppContext &context) {
     vkDestroySurfaceKHR(*context.appInstance, surface, nullptr);
     glfwDestroyWindow(window);
 }
@@ -54,10 +54,10 @@ void AppWindow::createSurface(const AppInstance *appInstance) {
     }
 }
 
-GLFWwindow *AppWindow::getWindow() {
+GLFWwindow *AppWindow::getWindow() const {
     return window;
 }
 
-VkSurfaceKHR* AppWindow::getTargetSurface() {
-    return &surface;
+VkSurfaceKHR AppWindow::getTargetSurface() const {
+    return surface;
 }
