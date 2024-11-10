@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.22.0)
 project(TriangularOmnissiah)
 
-set(CMAKE_BUILD_TYPE Release)
+set(CMAKE_BUILD_TYPE Debug)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_COMPILER g++)
@@ -16,7 +16,12 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/modules")
 #find_library(LIBXRANDR Xrandr)
 #find_library(LIBXI Xi)
 
-add_executable(Triangle src/main.cpp)
+set(SOURCES
+    src/main.cpp
+    src/AppInstance.cpp
+)
+
+add_executable(Triangle ${SOURCES})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 #target_link_libraries(Triangle PRIVATE "/usr/lib/x86_64-linux-gnu/libglfw3.so.3")

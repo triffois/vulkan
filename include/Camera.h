@@ -16,7 +16,6 @@ enum class Camera_Movement {
     SE
 };
 
-// Default camera values
 const float YAW          = -90.0f;
 const float PITCH        =  0.0f;
 const float SPEED        =  1.5f;
@@ -26,16 +25,16 @@ const float ZOOM         =  45.0f;
 
 class Camera {
 public:
-    // camera Attributes
+
     glm::vec3 Position;
     glm::vec3 Front;
     glm::vec3 Up;
     glm::vec3 Right;
     glm::vec3 WorldUp;
-    // euler Angles
+
     float Yaw;
     float Pitch;
-    // camera options
+
     float MovementSpeed{SPEED};
     float MouseSensitivityX{SENSITIVITYX};
     float MouseSensitivityY{SENSITIVITYY};
