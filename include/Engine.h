@@ -42,11 +42,7 @@ const std::vector<uint16_t> indices = {
 
 class Engine {
 public:
-    void run() {
-        initVulkan();
-        mainLoop();
-        cleanup();
-    }
+    void run();
 
     Camera *getCamera();
 
@@ -72,22 +68,21 @@ private:
     VkCommandPool commandPool;
 
     VkImage depthImage;
-    VkDeviceMemory depthImageMemory;
     VkImageView depthImageView;
+    DeviceMemoryAllocationHandle depthImageAllocation;
 
     VkImage textureImage;
-    VkDeviceMemory textureImageMemory;
+
     VkImageView textureImageView;
     VkSampler textureSampler;
 
     VkBuffer vertexBuffer;
-    VkDeviceMemory vertexBufferMemory;
+
     VkBuffer indexBuffer;
-    VkDeviceMemory indexBufferMemory;
 
     std::vector<VkBuffer> uniformBuffers;
-    std::vector<VkDeviceMemory> uniformBuffersMemory;
-    std::vector<void*> uniformBuffersMapped;
+    std::vector<void *> uniformBuffersMapped;
+    std::vector<DeviceMemoryAllocationHandle> uniformBuffersAllocations;
 
     VkDescriptorPool descriptorPool;
     std::vector<VkDescriptorSet> descriptorSets;
@@ -162,7 +157,7 @@ private:
 
     VkImageView createImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
-    void createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& imageMemory);
+    DeviceMemoryAllocationHandle createImage(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VmaMemoryUsage memoryUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO, VmaAllocationCreateFlagBits allocFlagBits = VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
 
     void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
@@ -178,7 +173,7 @@ private:
 
     void createDescriptorSets();
 
-    void createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VkDeviceMemory& bufferMemory);
+    DeviceMemoryAllocationHandle createBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkBuffer& buffer, VmaMemoryUsage memoryUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO, VmaAllocationCreateFlagBits allocBits = VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
 
     VkCommandBuffer beginSingleTimeCommands();
 
@@ -186,7 +181,7 @@ private:
 
     void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
 
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 
     void createCommandBuffers();
 

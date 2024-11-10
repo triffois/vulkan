@@ -29,6 +29,7 @@ void AppInstance::cleanUpAll() {
     std::for_each(componentsToCleanUp.begin(), componentsToCleanUp.end(), [&currentCleanUpContext](auto component){component-> cleanUp(currentCleanUpContext);});
 }
 
+//if order is not specified (== -1) -> adds as a last component to clean up
 void AppInstance::addComponentToCleanUp(INeedCleanUp *componentToCleanUp, int order) {
     if(order == -1)
         componentsToCleanUp.emplace_back(componentToCleanUp);

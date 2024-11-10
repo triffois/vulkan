@@ -3,6 +3,7 @@
 #include <vector>
 #include <stdexcept>
 #include <set>
+#include <algorithm>
 
 #include "ValidationLayersInfo.h"
 
@@ -17,9 +18,14 @@ void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
 
     pickPhysicalDevice();
     createLogicalDevice();
+    createAllocator();
 }
 
 void Device::cleanUp(const AppContext &context) {
+
+    std::for_each(allocations.begin(), allocations.end(), [this](auto &allocationToCleanUp){freeAllocation(&allocationToCleanUp);});
+
+    vmaDestroyAllocator(deviceMemoryAllocator);
     vkDestroyDevice(device, nullptr);
 }
 
@@ -44,7 +50,7 @@ void Device::pickPhysicalDevice() {
     vkEnumeratePhysicalDevices(*appInstance->getInstance(), &deviceCount, nullptr);
 
     if (deviceCount == 0) {
-        throw std::runtime_error("failed to find GPUs with Vulkan support!");
+        throw std::runtime_error("Failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
@@ -105,11 +111,23 @@ void Device::createLogicalDevice() {
     }
 
     if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create logical device!");
+        throw std::runtime_error("Failed to create logical device!");
     }
 
     vkGetDeviceQueue(device, indices.graphicsFamily.value(), 0, &graphicsQueue);
     vkGetDeviceQueue(device, indices.presentFamily.value(), 0, &presentQueue);
+}
+
+void Device::createAllocator() {
+    VmaAllocatorCreateInfo info{};
+    info.device = device;
+    info.physicalDevice = physicalDevice;
+    info.instance = *appInstance->getInstance();
+    info.vulkanApiVersion = VK_API_VERSION_1_3;
+
+    if(vmaCreateAllocator(&info, &deviceMemoryAllocator) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create a VMA allocator.");
+    }
 }
 
 bool Device::isDeviceSuitable(VkPhysicalDevice device) {
@@ -202,6 +220,24 @@ SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
     return details;
 }
 
+void Device::freeAllocation(DeviceMemoryAllocation *allocationToFree) {
+    if(allocationToFree->allocatedObject.index() == 0) {
+#ifndef NDEBUG
+    std::cout << "Destroying buffer" << std::endl;
+#endif
+
+        auto bufferToFree = std::get<0>(allocationToFree->allocatedObject);
+        vmaDestroyBuffer(deviceMemoryAllocator, bufferToFree, allocationToFree->allocation);
+    }else {
+#ifndef NDEBUG
+        std::cout << "Destroying image" << std::endl;
+#endif
+
+        auto imageToFree = std::get<1>(allocationToFree->allocatedObject);
+        vmaDestroyImage(deviceMemoryAllocator, imageToFree, allocationToFree->allocation);
+    }
+}
+
 VkResult Device::submitToAvailableGraphicsQueue(const VkSubmitInfo *info, VkFence submitFence,bool ifWaitIdle ) const {
     auto res = vkQueueSubmit(graphicsQueue, 1, info, submitFence);
     if(ifWaitIdle)
@@ -211,4 +247,61 @@ VkResult Device::submitToAvailableGraphicsQueue(const VkSubmitInfo *info, VkFenc
 
 VkResult Device::submitToAvailablePresentQueue(const VkPresentInfoKHR *info) const {
     return vkQueuePresentKHR(graphicsQueue, info);
+}
+
+VkResult Device::allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
+    const VmaAllocationCreateInfo *allocCreateInfo, VkBuffer*targetBuf, DeviceMemoryAllocationHandle *allocationInfo) {
+
+    DeviceMemoryAllocation newAllocationInfo{};
+    newAllocationInfo.allocatedObject.emplace<0>(*targetBuf);
+    auto res = vmaCreateBuffer(deviceMemoryAllocator, bufCreateInfo, allocCreateInfo, targetBuf, &newAllocationInfo.allocation, nullptr);
+
+    if(res == VK_SUCCESS) {
+        allocations.emplace_back(newAllocationInfo);
+        allocationInfo->allocationInfo = &allocations.back();
+    }
+
+    return res;
+}
+
+VkResult Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
+    const VmaAllocationCreateInfo *allocCreateInfo, VkImage*targetImage, DeviceMemoryAllocationHandle *allocationInfo) {
+
+    DeviceMemoryAllocation newAllocationInfo{};
+    newAllocationInfo.allocatedObject.emplace<1>(*targetImage);
+    auto res = vmaCreateImage(deviceMemoryAllocator, imgCreateInfo, allocCreateInfo, targetImage, &newAllocationInfo.allocation, nullptr);
+
+    if(res == VK_SUCCESS) {
+        allocations.emplace_back(newAllocationInfo);
+        allocationInfo->allocationInfo = &allocations.back();
+    }
+
+    return res;
+}
+
+VkResult Device::mapMemory(DeviceMemoryAllocationHandle *allocationInfo, void **ppData) const {
+    return vmaMapMemory(deviceMemoryAllocator, allocationInfo->allocationInfo->allocation, ppData);
+}
+
+VkResult Device::unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const {
+    vmaUnmapMemory(deviceMemoryAllocator, allocationInfo->allocationInfo->allocation);
+    return VK_SUCCESS;
+}
+
+VkResult Device::freeAllocationMemoryOnDemand(DeviceMemoryAllocationHandle *allocationInfo) {
+
+    //TODO: this is painfully slow. May want to replace it in the time to come
+    auto allocationToFreeItr = std::find(allocations.begin(), allocations.end(), *(allocationInfo->allocationInfo));
+
+    if(allocationToFreeItr != allocations.end()) {
+        freeAllocation(allocationInfo->allocationInfo);
+        allocations.erase(allocationToFreeItr);
+    }
+#ifndef NDEBUG
+    else {
+        std::cout << "Failed to free VMA memory on demand" << std::endl;
+    }
+#endif
+
+    return VK_SUCCESS;
 }

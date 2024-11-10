@@ -23,6 +23,7 @@ set(SOURCES
     src/Engine.cpp
     src/Time.cpp
     src/Device.cpp
+    src/VMAInit.cpp
 )
 
 add_executable(Triangle ${SOURCES})

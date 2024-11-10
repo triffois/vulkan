@@ -43,7 +43,7 @@ void AppWindow::initializeWindow(AppInstance *appInstance, ResizeCallback window
     glfwSetWindowUserPointer(window, appInstance);
     glfwSetFramebufferSizeCallback(window, windowResizeCallback);
 
-    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_HIDDEN);
     glfwSetCursorPosCallback(window, cursorPosCallback);
     glfwSetScrollCallback(window, scrollCallback);
 }
