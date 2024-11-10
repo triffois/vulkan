@@ -1,19 +1,35 @@
- #pragma once
+#pragma once
 
+#include "AppInstance.h"
 #include "INeedCleanUp.h"
 
-const uint32_t WIDTH = 800;
-const uint32_t HEIGHT = 600;
+using ResizeCallback = void (*)(GLFWwindow* window, int width, int height);
 
-class AppWindow : INeedCleanUp {
+const uint32_t WINDOWWIDTH = 800;
+const uint32_t WINDOWHEIGHT = 600;
+
+class AppWindow : public INeedCleanUp {
 
 public:
-    AppWindow();
-    ~AppWindow();
+    AppWindow() = default;
+    ~AppWindow() = default;
+    void init(AppInstance *appInstance, ResizeCallback windowResizeCallback);
+
+    AppWindow(const AppInstance& ) = delete;
+    AppWindow(AppInstance&& ) = delete;
+
+    AppWindow& operator=(const AppWindow& ) = delete;
+    AppWindow& operator=(AppWindow&& ) = delete;
+
     GLFWwindow *getWindow();
     VkSurfaceKHR *getTargetSurface();
+    void cleanUp(const CleanUpContex &context) override;
 
 private:
-    GLFWwindow* window;
+    void initializeWindow(AppInstance *appInstance, ResizeCallback windowResizeCallback);
+    void createSurface(const AppInstance *appInstance);
+
+private:
+    GLFWwindow* window{};
     VkSurfaceKHR surface;
 };

@@ -19,6 +19,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/modules")
 set(SOURCES
     src/main.cpp
     src/AppInstance.cpp
+    src/AppWindow.cpp
+    src/Engine.cpp
+    src/Time.cpp
 )
 
 add_executable(Triangle ${SOURCES})

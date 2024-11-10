@@ -1,27 +1,39 @@
 #pragma once
 
-#include "INeedCleanUp.h"
-
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#include "INeedCleanUp.h"
 #include <iostream>
 #include <vector>
-#include <queue>
 
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
 
-class AppInstance : INeedCleanUp {
+#ifdef NDEBUG
+const bool enableValidationLayers = false;
+#else
+const bool enableValidationLayers = true;
+#endif
+
+class AppInstance : public INeedCleanUp {
 
 public:
-    AppInstance();
-    ~AppInstance();
-    const VkInstance *getInstance();
+    AppInstance() = default;
+    ~AppInstance() = default;
+    void init();
+
+    AppInstance(const AppInstance& ) = delete;
+    AppInstance(AppInstance&& ) = delete;
+
+    AppInstance& operator=(const AppInstance& ) = delete;
+    AppInstance& operator=(AppInstance&& ) = delete;
+
+    const VkInstance *getInstance() const;
     void setAppDevice(VkDevice *appDevice);
     void cleanUpAll();
-    void addComponentToCleanUp(size_t order, INeedCleanUp *componentToCleanUp);
+    void addComponentToCleanUp(INeedCleanUp *componentToCleanUp, int order = -1);
     void cleanUp(const CleanUpContex &context) override;
 
 private:

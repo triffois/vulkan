@@ -4,21 +4,12 @@
 #include <limits>
 #include <algorithm>
 
-#ifdef NDEBUG
-const bool enableValidationLayers = false;
-#else
-const bool enableValidationLayers = true;
-#endif
-
-AppInstance::AppInstance() : INeedCleanUp() {
+void AppInstance::init() {
     createInstance();
     setupDebugMessenger();
 }
 
-AppInstance::~AppInstance() {
-}
-
-const VkInstance * AppInstance::getInstance() {
+const VkInstance *AppInstance::getInstance() const {
     return &instance;
 }
 
@@ -29,11 +20,16 @@ void AppInstance::setAppDevice(VkDevice *appDevice) {
 void AppInstance::cleanUpAll() {
     CleanUpContex currentCleanUpContext{&instance, appDevice};
 
+    std::cout << componentsToCleanUp.size() << std::endl;
+
     std::for_each(componentsToCleanUp.begin(), componentsToCleanUp.end(), [&currentCleanUpContext](auto component){component-> cleanUp(currentCleanUpContext);});
 }
 
-void AppInstance::addComponentToCleanUp(size_t order, INeedCleanUp *componentToCleanUp) {
-    componentsToCleanUp.insert(componentsToCleanUp.cbegin() + order, componentToCleanUp);
+void AppInstance::addComponentToCleanUp(INeedCleanUp *componentToCleanUp, int order) {
+    if(order == -1)
+        componentsToCleanUp.emplace_back(componentToCleanUp);
+    else
+        componentsToCleanUp.insert(componentsToCleanUp.cbegin() + order, componentToCleanUp);
 }
 
 bool AppInstance::checkValidationLayerSupport() {
@@ -62,6 +58,8 @@ bool AppInstance::checkValidationLayerSupport() {
 }
 
 std::vector<const char*> AppInstance::getRequiredExtensions() {
+    glfwInit();
+
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -117,7 +115,7 @@ void AppInstance::createInstance() {
 
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    appInfo.pApplicationName = "Hello Triangle";
+    appInfo.pApplicationName = "Tiny Engine";
     appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 3, 0);
@@ -147,13 +145,11 @@ void AppInstance::createInstance() {
     if (vkCreateInstance(&createInfo, nullptr, &instance) != VK_SUCCESS) {
         throw std::runtime_error("failed to create instance!");
     }
-
-    addComponentToCleanUp(0, this);
 }
 
 void AppInstance::cleanUp(const CleanUpContex &context) {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
-    vkDestroyInstance(instance, nullptr); //TODO: remove this in favor of app cleanup
+    vkDestroyInstance(instance, nullptr);
 }
