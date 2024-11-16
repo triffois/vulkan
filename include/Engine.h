@@ -258,7 +258,7 @@ private:
         lastCursorPosY = ypos;
 
         auto app = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(window));
-        app->mainCamera.ProcessMouseMovement(dX, dY, true);
+        app->mainCamera.ProcessMouseMovement(dX, dY);
     }
 
     static void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
