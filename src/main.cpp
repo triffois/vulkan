@@ -19,7 +19,9 @@ Model model(vertices, indices);
 int main() {
     Engine app;
 
+    std::cout << "Engine created" << std::endl;
     app.addPipeline("shaders/vert.spv", "shaders/frag.spv", model);
+    std::cout << "Pipeline added" << std::endl;
 
     try {
         app.run();

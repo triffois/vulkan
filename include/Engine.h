@@ -55,11 +55,6 @@ class Engine {
     VkImageView depthImageView;
     DeviceMemoryAllocationHandle depthImageAllocation;
 
-    VkImage textureImage;
-
-    VkImageView textureImageView;
-    VkSampler textureSampler;
-
     std::vector<VkCommandBuffer> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -121,40 +116,6 @@ class Engine {
 
     bool hasStencilComponent(VkFormat format);
 
-    void createTextureImage();
-
-    void createTextureImageView();
-
-    void createTextureSampler();
-
-    VkImageView createImageView(VkImage image, VkFormat format,
-                                VkImageAspectFlags aspectFlags);
-
-    DeviceMemoryAllocationHandle createImage(
-        uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-        VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-        VkImage &image,
-        VmaMemoryUsage memoryUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO,
-        VmaAllocationCreateFlagBits allocFlagBits =
-            VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
-
-    void transitionImageLayout(VkImage image, VkFormat format,
-                               VkImageLayout oldLayout,
-                               VkImageLayout newLayout);
-
-    void copyBufferToImage(Buffer &buffer, VkImage image, uint32_t width,
-                           uint32_t height);
-
-    void createVertexBuffer();
-
-    void createIndexBuffer();
-
-    void createUniformBuffers();
-
-    VkCommandBuffer beginSingleTimeCommands();
-
-    void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
     void createCommandBuffers();
 
     void transitionDepthImageLayout(VkImageLayout fromLayout,
@@ -182,5 +143,4 @@ class Engine {
         const std::vector<VkPresentModeKHR> &availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 };

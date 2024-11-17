@@ -1,11 +1,13 @@
 #pragma once
 
+#include "Buffer.h"
 #include "Camera.h"
 #include "DescriptorLayout.h"
 #include "DescriptorPool.h"
 #include "DescriptorSet.h"
 #include "Device.h"
 #include "Model.h"
+#include <memory>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -24,10 +26,12 @@ class Pipeline {
     VkPipeline getPipeline() const { return graphicsPipeline; }
     VkPipelineLayout getLayout() const { return pipelineLayout; }
     const Model &getModel() const { return model; }
-    VkDescriptorSet getDescriptorSet(uint32_t frameIndex) const;
 
-    VkBuffer getVertexBuffer() const { return vertexBuffer; }
-    VkBuffer getIndexBuffer() const { return indexBuffer; }
+    VkDescriptorSet getDescriptorSet(uint32_t frameIndex) const {
+        return descriptorSet.getSet(frameIndex);
+    }
+    VkBuffer getVertexBuffer() const { return vertexBuffer->getBuffer(); }
+    VkBuffer getIndexBuffer() const { return indexBuffer->getBuffer(); }
     uint32_t getIndexCount() const { return model.getIndices().size(); }
 
   private:
@@ -36,8 +40,13 @@ class Pipeline {
     VkPipelineLayout pipelineLayout;
     Model model;
 
-    VkBuffer vertexBuffer; // TODO: use own abstraction
-    VkBuffer indexBuffer;
+    VkImage textureImage;
+    VkImageView textureImageView;
+    VkSampler textureSampler;
+    DeviceMemoryAllocationHandle textureImageAllocation;
+
+    std::unique_ptr<Buffer> vertexBuffer;
+    std::unique_ptr<Buffer> indexBuffer;
     DeviceMemoryAllocationHandle vertexBufferAllocation;
     DeviceMemoryAllocationHandle indexBufferAllocation;
 
@@ -53,7 +62,7 @@ class Pipeline {
     DescriptorPool descriptorPool;
     DescriptorSet descriptorSet;
 
-    std::vector<VkBuffer> uniformBuffers;
+    std::vector<std::unique_ptr<Buffer>> uniformBuffers;
     std::vector<void *> uniformBuffersMapped;
     std::vector<DeviceMemoryAllocationHandle> uniformBuffersAllocations;
 
@@ -62,4 +71,9 @@ class Pipeline {
     void createUniformBuffers(uint32_t maxFramesInFlight);
     VkShaderModule createShaderModule(const std::vector<char> &code);
     std::vector<char> readFile(const std::string &filename);
+
+    void createTextureResources();
+    void createTextureSampler();
+    void createTextureImage();
+    void createTextureImageView();
 };

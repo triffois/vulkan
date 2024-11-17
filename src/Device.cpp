@@ -1,16 +1,14 @@
 #include "Device.h"
 
-#include <vector>
-#include <stdexcept>
-#include <set>
 #include <algorithm>
+#include <set>
+#include <stdexcept>
+#include <vector>
 
 #include "ValidationLayersInfo.h"
 
-const std::vector<const char*> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-    VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
-};
+const std::vector<const char *> deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
 
 void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
     this->appWindow = appWindow;
@@ -19,21 +17,28 @@ void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
     pickPhysicalDevice();
     createLogicalDevice();
     createAllocator();
+
+    QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+    graphicsCommandPool =
+        new CommandPool(this, indices.graphicsFamily.value(),
+                        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 void Device::cleanUp(const AppContext &context) {
+    delete graphicsCommandPool;
 
-    std::for_each(allocations.begin(), allocations.end(), [this](auto &allocationToCleanUp){freeAllocation(&allocationToCleanUp);});
+    std::for_each(allocations.begin(), allocations.end(),
+                  [this](auto &allocationToCleanUp) {
+                      freeAllocation(&allocationToCleanUp);
+                  });
 
     vmaDestroyAllocator(deviceMemoryAllocator);
     vkDestroyDevice(device, nullptr);
 }
 
-const VkDevice* Device::getDevice() const {
-    return &device;
-}
+const VkDevice *Device::getDevice() const { return &device; }
 
-const VkPhysicalDevice* Device::getPhysicalDevice() const {
+const VkPhysicalDevice *Device::getPhysicalDevice() const {
     return &physicalDevice;
 }
 
@@ -47,16 +52,18 @@ SwapChainSupportDetails Device::querySwapChainSupportCurrent() {
 
 void Device::pickPhysicalDevice() {
     uint32_t deviceCount = 0;
-    vkEnumeratePhysicalDevices(*appInstance->getInstance(), &deviceCount, nullptr);
+    vkEnumeratePhysicalDevices(*appInstance->getInstance(), &deviceCount,
+                               nullptr);
 
     if (deviceCount == 0) {
         throw std::runtime_error("Failed to find GPUs with Vulkan support!");
     }
 
     std::vector<VkPhysicalDevice> devices(deviceCount);
-    vkEnumeratePhysicalDevices(*appInstance->getInstance(), &deviceCount, devices.data());
+    vkEnumeratePhysicalDevices(*appInstance->getInstance(), &deviceCount,
+                               devices.data());
 
-    for (const auto& device : devices) {
+    for (const auto &device : devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
             break;
@@ -72,7 +79,8 @@ void Device::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
+                                              indices.presentFamily.value()};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
@@ -84,8 +92,9 @@ void Device::createLogicalDevice() {
         queueCreateInfos.push_back(queueCreateInfo);
     }
 
-    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature {};
-    dynamicRenderingFeature.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+    VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature{};
+    dynamicRenderingFeature.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
     dynamicRenderingFeature.dynamicRendering = VK_TRUE;
 
     VkPhysicalDeviceFeatures deviceFeatures{};
@@ -95,22 +104,26 @@ void Device::createLogicalDevice() {
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.pNext = &dynamicRenderingFeature;
 
-    createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
+    createInfo.queueCreateInfoCount =
+        static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
+    createInfo.enabledExtensionCount =
+        static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     if (enableValidationLayers) {
-        createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
+        createInfo.enabledLayerCount =
+            static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
     } else {
         createInfo.enabledLayerCount = 0;
     }
 
-    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {
+    if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) !=
+        VK_SUCCESS) {
         throw std::runtime_error("Failed to create logical device!");
     }
 
@@ -125,7 +138,7 @@ void Device::createAllocator() {
     info.instance = *appInstance->getInstance();
     info.vulkanApiVersion = VK_API_VERSION_1_3;
 
-    if(vmaCreateAllocator(&info, &deviceMemoryAllocator) != VK_SUCCESS) {
+    if (vmaCreateAllocator(&info, &deviceMemoryAllocator) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create a VMA allocator.");
     }
 }
@@ -137,26 +150,32 @@ bool Device::isDeviceSuitable(VkPhysicalDevice device) {
 
     bool swapChainAdequate = false;
     if (extensionsSupported) {
-        SwapChainSupportDetails swapChainSupport = querySwapChainSupport(device);
-        swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        SwapChainSupportDetails swapChainSupport =
+            querySwapChainSupport(device);
+        swapChainAdequate = !swapChainSupport.formats.empty() &&
+                            !swapChainSupport.presentModes.empty();
     }
 
     VkPhysicalDeviceFeatures supportedFeatures;
     vkGetPhysicalDeviceFeatures(device, &supportedFeatures);
 
-    return indices.isComplete() && extensionsSupported && swapChainAdequate && supportedFeatures.samplerAnisotropy;
+    return indices.isComplete() && extensionsSupported && swapChainAdequate &&
+           supportedFeatures.samplerAnisotropy;
 }
 
 bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     uint32_t extensionCount;
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
+                                         nullptr);
 
     std::vector<VkExtensionProperties> availableExtensions(extensionCount);
-    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+    vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,
+                                         availableExtensions.data());
 
-    std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
+    std::set<std::string> requiredExtensions(deviceExtensions.begin(),
+                                             deviceExtensions.end());
 
-    for (const auto& extension : availableExtensions) {
+    for (const auto &extension : availableExtensions) {
         requiredExtensions.erase(extension.extensionName);
     }
 
@@ -167,19 +186,22 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
     QueueFamilyIndices indices;
 
     uint32_t queueFamilyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                             nullptr);
 
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount,
+                                             queueFamilies.data());
 
     int i = 0;
-    for (const auto& queueFamily : queueFamilies) {
+    for (const auto &queueFamily : queueFamilies) {
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
         }
 
         VkBool32 presentSupport = false;
-        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, appWindow->getTargetSurface(), &presentSupport);
+        vkGetPhysicalDeviceSurfaceSupportKHR(
+            device, i, appWindow->getTargetSurface(), &presentSupport);
 
         if (presentSupport) {
             indices.presentFamily = i;
@@ -199,64 +221,79 @@ SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
     SwapChainSupportDetails details;
     const auto surface = appWindow->getTargetSurface();
 
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &details.capabilities);
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface,
+                                              &details.capabilities);
 
     uint32_t formatCount;
-    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, nullptr);
+    vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
+                                         nullptr);
 
     if (formatCount != 0) {
         details.formats.resize(formatCount);
-        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount, details.formats.data());
+        vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &formatCount,
+                                             details.formats.data());
     }
 
     uint32_t presentModeCount;
-    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, nullptr);
+    vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface,
+                                              &presentModeCount, nullptr);
 
     if (presentModeCount != 0) {
         details.presentModes.resize(presentModeCount);
-        vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &presentModeCount, details.presentModes.data());
+        vkGetPhysicalDeviceSurfacePresentModesKHR(
+            device, surface, &presentModeCount, details.presentModes.data());
     }
 
     return details;
 }
 
 void Device::freeAllocation(DeviceMemoryAllocation *allocationToFree) {
-    if(allocationToFree->allocatedObject.index() == 0) {
+    if (allocationToFree->allocatedObject.index() == 0) {
 #ifndef NDEBUG
-    std::cout << "Destroying buffer" << std::endl;
+        std::cout << "Destroying buffer" << std::endl;
 #endif
 
         auto bufferToFree = std::get<0>(allocationToFree->allocatedObject);
-        vmaDestroyBuffer(deviceMemoryAllocator, bufferToFree, allocationToFree->allocation);
-    }else {
+        vmaDestroyBuffer(deviceMemoryAllocator, bufferToFree,
+                         allocationToFree->allocation);
+    } else {
 #ifndef NDEBUG
         std::cout << "Destroying image" << std::endl;
 #endif
 
         auto imageToFree = std::get<1>(allocationToFree->allocatedObject);
-        vmaDestroyImage(deviceMemoryAllocator, imageToFree, allocationToFree->allocation);
+        vmaDestroyImage(deviceMemoryAllocator, imageToFree,
+                        allocationToFree->allocation);
     }
 }
 
-VkResult Device::submitToAvailableGraphicsQueue(const VkSubmitInfo *info, VkFence submitFence,bool ifWaitIdle ) const {
+VkResult Device::submitToAvailableGraphicsQueue(const VkSubmitInfo *info,
+                                                VkFence submitFence,
+                                                bool ifWaitIdle) const {
     auto res = vkQueueSubmit(graphicsQueue, 1, info, submitFence);
-    if(ifWaitIdle)
+    if (ifWaitIdle)
         vkQueueWaitIdle(graphicsQueue);
     return res;
 }
 
-VkResult Device::submitToAvailablePresentQueue(const VkPresentInfoKHR *info) const {
+VkResult
+Device::submitToAvailablePresentQueue(const VkPresentInfoKHR *info) const {
     return vkQueuePresentKHR(graphicsQueue, info);
 }
 
-VkResult Device::allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
-    const VmaAllocationCreateInfo *allocCreateInfo, VkBuffer*targetBuf, DeviceMemoryAllocationHandle *allocationInfo) {
+VkResult
+Device::allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
+                             const VmaAllocationCreateInfo *allocCreateInfo,
+                             VkBuffer *targetBuf,
+                             DeviceMemoryAllocationHandle *allocationInfo) {
 
     DeviceMemoryAllocation newAllocationInfo{};
     newAllocationInfo.allocatedObject.emplace<0>(*targetBuf);
-    auto res = vmaCreateBuffer(deviceMemoryAllocator, bufCreateInfo, allocCreateInfo, targetBuf, &newAllocationInfo.allocation, nullptr);
+    auto res =
+        vmaCreateBuffer(deviceMemoryAllocator, bufCreateInfo, allocCreateInfo,
+                        targetBuf, &newAllocationInfo.allocation, nullptr);
 
-    if(res == VK_SUCCESS) {
+    if (res == VK_SUCCESS) {
         allocations.emplace_back(newAllocationInfo);
         allocationInfo->allocationInfo = &allocations.back();
     }
@@ -264,14 +301,19 @@ VkResult Device::allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
     return res;
 }
 
-VkResult Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
-    const VmaAllocationCreateInfo *allocCreateInfo, VkImage*targetImage, DeviceMemoryAllocationHandle *allocationInfo) {
+VkResult
+Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
+                            const VmaAllocationCreateInfo *allocCreateInfo,
+                            VkImage *targetImage,
+                            DeviceMemoryAllocationHandle *allocationInfo) {
 
     DeviceMemoryAllocation newAllocationInfo{};
     newAllocationInfo.allocatedObject.emplace<1>(*targetImage);
-    auto res = vmaCreateImage(deviceMemoryAllocator, imgCreateInfo, allocCreateInfo, targetImage, &newAllocationInfo.allocation, nullptr);
+    auto res =
+        vmaCreateImage(deviceMemoryAllocator, imgCreateInfo, allocCreateInfo,
+                       targetImage, &newAllocationInfo.allocation, nullptr);
 
-    if(res == VK_SUCCESS) {
+    if (res == VK_SUCCESS) {
         allocations.emplace_back(newAllocationInfo);
         allocationInfo->allocationInfo = &allocations.back();
     }
@@ -279,21 +321,27 @@ VkResult Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
     return res;
 }
 
-VkResult Device::mapMemory(DeviceMemoryAllocationHandle *allocationInfo, void **ppData) const {
-    return vmaMapMemory(deviceMemoryAllocator, allocationInfo->allocationInfo->allocation, ppData);
+VkResult Device::mapMemory(DeviceMemoryAllocationHandle *allocationInfo,
+                           void **ppData) const {
+    return vmaMapMemory(deviceMemoryAllocator,
+                        allocationInfo->allocationInfo->allocation, ppData);
 }
 
-VkResult Device::unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const {
-    vmaUnmapMemory(deviceMemoryAllocator, allocationInfo->allocationInfo->allocation);
+VkResult
+Device::unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const {
+    vmaUnmapMemory(deviceMemoryAllocator,
+                   allocationInfo->allocationInfo->allocation);
     return VK_SUCCESS;
 }
 
-VkResult Device::freeAllocationMemoryOnDemand(DeviceMemoryAllocationHandle *allocationInfo) {
+VkResult Device::freeAllocationMemoryOnDemand(
+    DeviceMemoryAllocationHandle *allocationInfo) {
 
-    //TODO: this is painfully slow. May want to replace it in the time to come
-    auto allocationToFreeItr = std::find(allocations.begin(), allocations.end(), *(allocationInfo->allocationInfo));
+    // TODO: this is painfully slow. May want to replace it in the time to come
+    auto allocationToFreeItr = std::find(allocations.begin(), allocations.end(),
+                                         *(allocationInfo->allocationInfo));
 
-    if(allocationToFreeItr != allocations.end()) {
+    if (allocationToFreeItr != allocations.end()) {
         freeAllocation(allocationInfo->allocationInfo);
         allocations.erase(allocationToFreeItr);
     }
@@ -304,4 +352,132 @@ VkResult Device::freeAllocationMemoryOnDemand(DeviceMemoryAllocationHandle *allo
 #endif
 
     return VK_SUCCESS;
+}
+
+DeviceMemoryAllocationHandle Device::createImage(
+    uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+    VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image,
+    VmaMemoryUsage memoryUsage, VmaAllocationCreateFlagBits allocFlagBits) {
+    VkImageCreateInfo imageInfo{};
+    imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    imageInfo.imageType = VK_IMAGE_TYPE_2D;
+    imageInfo.extent.width = width;
+    imageInfo.extent.height = height;
+    imageInfo.extent.depth = 1;
+    imageInfo.mipLevels = 1;
+    imageInfo.arrayLayers = 1;
+    imageInfo.format = format;
+    imageInfo.tiling = tiling;
+    imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    imageInfo.usage = usage;
+    imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image!");
+    }
+
+    VkMemoryRequirements memRequirements;
+    vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+    auto suitableHeapMemoryType =
+        findMemoryType(memRequirements.memoryTypeBits, properties);
+
+    VmaAllocationCreateInfo imageAllocInfo{};
+    imageAllocInfo.memoryTypeBits = 1u << suitableHeapMemoryType;
+    imageAllocInfo.usage = memoryUsage;
+    imageAllocInfo.flags = allocFlagBits;
+    imageAllocInfo.pool = VK_NULL_HANDLE;
+
+    DeviceMemoryAllocationHandle allocationHandle{};
+    if (allocateImageMemory(&imageInfo, &imageAllocInfo, &image,
+                            &allocationHandle) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate memory for image!");
+    }
+
+    return allocationHandle;
+}
+
+VkImageView Device::createImageView(VkImage image, VkFormat format,
+                                    VkImageAspectFlags aspectFlags) {
+    VkImageViewCreateInfo viewInfo{};
+    viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    viewInfo.image = image;
+    viewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    viewInfo.format = format;
+    viewInfo.subresourceRange.aspectMask = aspectFlags;
+    viewInfo.subresourceRange.baseMipLevel = 0;
+    viewInfo.subresourceRange.levelCount = 1;
+    viewInfo.subresourceRange.baseArrayLayer = 0;
+    viewInfo.subresourceRange.layerCount = 1;
+
+    VkImageView imageView;
+    if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) !=
+        VK_SUCCESS) {
+        throw std::runtime_error("failed to create texture image view!");
+    }
+
+    return imageView;
+}
+
+void Device::transitionImageLayout(VkImage image, VkFormat format,
+                                   VkImageLayout oldLayout,
+                                   VkImageLayout newLayout) {
+    VkCommandBuffer commandBuffer =
+        getGraphicsCommandPool()->beginSingleTimeCommands();
+
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = oldLayout;
+    barrier.newLayout = newLayout;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = image;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = 1;
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+
+    VkPipelineStageFlags sourceStage;
+    VkPipelineStageFlags destinationStage;
+
+    if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+        newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    } else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL &&
+               newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    } else {
+        throw std::invalid_argument("unsupported layout transition!");
+    }
+
+    vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
+                         nullptr, 0, nullptr, 1, &barrier);
+
+    getGraphicsCommandPool()->endSingleTimeCommands(commandBuffer);
+}
+
+uint32_t Device::findMemoryType(uint32_t typeFilter,
+                                VkMemoryPropertyFlags properties) const {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(*getPhysicalDevice(), &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & properties) ==
+                properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type!");
 }
