@@ -1,8 +1,6 @@
 #pragma once
 
-#include "DescriptorLayout.h"
-#include "DescriptorPool.h"
-#include "DescriptorSet.h"
+#include "Buffer.h"
 #include "Pipeline.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -19,20 +17,6 @@
 #include "Camera.h"
 #include "Device.h"
 #include "EnginePeripherals.h"
-#include "commonstructs.h"
-
-const std::vector<Vertex> vertices = {
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
-
-const std::vector<uint16_t> indices = {0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
 
 class Engine {
   public:
@@ -46,7 +30,7 @@ class Engine {
 
     Camera *getCamera();
     void addPipeline(const std::string &vertShaderPath,
-                     const std::string &fragShaderPath);
+                     const std::string &fragShaderPath, const Model &model);
 
   private:
     AppInstance appInstance;
@@ -54,9 +38,6 @@ class Engine {
     Device appDevice;
     VkDevice device;
 
-    DescriptorPool descriptorPool;
-    DescriptorLayout descriptorLayout;
-    DescriptorSet descriptorSet;
     std::vector<Pipeline> pipelines;
 
     EnginePeripheralsManager peripheralsManager;
@@ -78,14 +59,6 @@ class Engine {
 
     VkImageView textureImageView;
     VkSampler textureSampler;
-
-    VkBuffer vertexBuffer;
-
-    VkBuffer indexBuffer;
-
-    std::vector<VkBuffer> uniformBuffers;
-    std::vector<void *> uniformBuffersMapped;
-    std::vector<DeviceMemoryAllocationHandle> uniformBuffersAllocations;
 
     std::vector<VkCommandBuffer> commandBuffers;
 
@@ -169,7 +142,7 @@ class Engine {
                                VkImageLayout oldLayout,
                                VkImageLayout newLayout);
 
-    void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
+    void copyBufferToImage(Buffer &buffer, VkImage image, uint32_t width,
                            uint32_t height);
 
     void createVertexBuffer();
@@ -178,21 +151,9 @@ class Engine {
 
     void createUniformBuffers();
 
-    DeviceMemoryAllocationHandle createBuffer(
-        VkDeviceSize size, VkBufferUsageFlags usage,
-        VkMemoryPropertyFlags properties, VkBuffer &buffer,
-        VmaMemoryUsage memoryUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO,
-        VmaAllocationCreateFlagBits allocBits =
-            VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
-
     VkCommandBuffer beginSingleTimeCommands();
 
     void endSingleTimeCommands(VkCommandBuffer commandBuffer);
-
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
-    uint32_t findMemoryType(uint32_t typeFilter,
-                            VkMemoryPropertyFlags properties) const;
 
     void createCommandBuffers();
 
@@ -210,8 +171,6 @@ class Engine {
 
     void createSyncObjects();
 
-    void updateUniformBuffer(uint32_t currentImage);
-
     void drawFrame();
 
     VkShaderModule createShaderModule(const std::vector<char> &code);
@@ -223,4 +182,5 @@ class Engine {
         const std::vector<VkPresentModeKHR> &availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+    uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
 };

@@ -49,7 +49,7 @@ public:
         updateCameraVectors();
     }
 
-    glm::mat4 GetViewMatrix()
+    glm::mat4 const GetViewMatrix()
     {
         return glm::lookAt(Position, Position + Front, Up);
     }
@@ -101,7 +101,7 @@ public:
             Zoom = 45.0f;
     }
 
-    float getZoom() {
+    float const getZoom() {
         return Zoom;
     }
 

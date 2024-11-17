@@ -4,12 +4,13 @@
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <array>
 #include <optional>
 #include <vector>
-#include <array>
 
 struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
@@ -40,8 +41,10 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+    static std::array<VkVertexInputAttributeDescription, 3>
+    getAttributeDescriptions() {
+        std::array<VkVertexInputAttributeDescription, 3>
+            attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location = 0;
@@ -68,7 +71,7 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 proj;
 };
 
-struct AppContext{
+struct AppContext {
     const VkInstance *appInstance;
     const VkDevice *appDevice;
     const GLFWwindow *appWindow;

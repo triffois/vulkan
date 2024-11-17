@@ -1,15 +1,28 @@
 #include "Pipeline.h"
+#include "Buffer.h"
 #include <GLFW/glfw3.h>
+#include <chrono>
+#include <cstring>
 #include <fstream>
 #include <stdexcept>
 
 #include "commonstructs.h"
 
-void Pipeline::init(VkDevice device, const std::string &vertShaderPath,
-                    const std::string &fragShaderPath,
-                    const DescriptorLayout &descriptorLayout,
-                    VkFormat colorFormat, VkFormat depthFormat) {
-    this->device = device;
+Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
+                   const std::string &fragShaderPath, VkFormat colorFormat,
+                   VkFormat depthFormat, const Model &model,
+                   uint32_t maxFramesInFlight)
+    : device(device), model(model) {
+    createUniformBuffers(maxFramesInFlight);
+    createVertexBuffer();
+    createIndexBuffer();
+
+    descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
+                       maxFramesInFlight);
+    for (size_t i = 0; i < maxFramesInFlight; i++) {
+        descriptorSet.updateBufferInfo(0, uniformBuffers[i], 0,
+                                       sizeof(UniformBufferObject));
+    }
 
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
@@ -119,8 +132,8 @@ void Pipeline::init(VkDevice device, const std::string &vertShaderPath,
     auto layout = descriptorLayout.getLayout();
     pipelineLayoutInfo.pSetLayouts = &layout;
 
-    if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr,
-                               &pipelineLayout) != VK_SUCCESS) {
+    if (vkCreatePipelineLayout(*device->getDevice(), &pipelineLayoutInfo,
+                               nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
     }
 
@@ -149,25 +162,28 @@ void Pipeline::init(VkDevice device, const std::string &vertShaderPath,
     pipelineInfo.renderPass = VK_NULL_HANDLE;
     pipelineInfo.subpass = 0;
 
-    if (vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo,
-                                  nullptr, &graphicsPipeline) != VK_SUCCESS) {
+    if (vkCreateGraphicsPipelines(*device->getDevice(), VK_NULL_HANDLE, 1,
+                                  &pipelineInfo, nullptr,
+                                  &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
 
     // Cleanup shader modules
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(*device->getDevice(), fragShaderModule, nullptr);
+    vkDestroyShaderModule(*device->getDevice(), vertShaderModule, nullptr);
 }
 
 void Pipeline::cleanup() {
     if (graphicsPipeline != VK_NULL_HANDLE) {
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+        vkDestroyPipeline(*device->getDevice(), graphicsPipeline, nullptr);
         graphicsPipeline = VK_NULL_HANDLE;
     }
     if (pipelineLayout != VK_NULL_HANDLE) {
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(*device->getDevice(), pipelineLayout, nullptr);
         pipelineLayout = VK_NULL_HANDLE;
     }
+
+    // TODO: cleanup vertex and index buffers
 }
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code) {
@@ -177,12 +193,40 @@ VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code) {
     createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
 
     VkShaderModule shaderModule;
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) !=
-        VK_SUCCESS) {
+    if (vkCreateShaderModule(*device->getDevice(), &createInfo, nullptr,
+                             &shaderModule) != VK_SUCCESS) {
         throw std::runtime_error("failed to create shader module!");
     }
 
     return shaderModule;
+}
+
+void Pipeline::updateUniformBuffer(uint32_t currentFrame, Camera &camera,
+                                   const VkExtent2D &swapChainExtent) const {
+    UniformBufferObject ubo{};
+    ubo.model = calculateModelMatrix();
+    ubo.view = camera.GetViewMatrix();
+    ubo.proj = glm::perspective(
+        glm::radians(camera.getZoom()),
+        swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+    ubo.proj[1][1] *= -1;
+
+    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+}
+
+glm::mat4 Pipeline::calculateModelMatrix() const {
+    static auto startTime = std::chrono::high_resolution_clock::now();
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    float time = std::chrono::duration<float, std::chrono::seconds::period>(
+                     currentTime - startTime)
+                     .count();
+
+    glm::mat4 model = glm::mat4(1.0f);
+    model = glm::rotate(model, time * glm::radians(45.0f),
+                        glm::vec3(0.0f, 0.0f, 1.0f));
+
+    // TODO: make this not hard-coded, but instead per-pipeline injectable
+    return model;
 }
 
 std::vector<char> Pipeline::readFile(const std::string &filename) {
@@ -200,4 +244,56 @@ std::vector<char> Pipeline::readFile(const std::string &filename) {
     file.close();
 
     return buffer;
+}
+
+void Pipeline::createVertexBuffer() {
+    auto vertices = model.getVertices();
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+
+    Buffer stagingBuffer(
+        device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+    void *data;
+    stagingBuffer.map(&data);
+    memcpy(data, vertices.data(), (size_t)bufferSize);
+    stagingBuffer.unmap();
+
+    Buffer vertexBuffer(device, bufferSize,
+                        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vertexBuffer.copyFrom(stagingBuffer, bufferSize);
+}
+
+void Pipeline::createIndexBuffer() {
+    auto indices = model.getIndices();
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+
+    // Create staging buffer
+    Buffer stagingBuffer(
+        device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+    // Copy index data to staging buffer
+    void *data;
+    stagingBuffer.map(&data);
+    memcpy(data, indices.data(), (size_t)bufferSize);
+    stagingBuffer.unmap();
+
+    // Create device local index buffer
+    Buffer indexBuffer(device, bufferSize,
+                       VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                           VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    // Copy from staging buffer to index buffer
+    indexBuffer.copyFrom(stagingBuffer, bufferSize);
 }

@@ -1,6 +1,5 @@
 #include "Engine.h"
 #include <algorithm>
-#include <chrono>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -67,10 +66,6 @@ void Engine::initVulkan() {
 
     createCommandPool();
 
-    // Initialize descriptor system
-    descriptorPool.init(device, MAX_FRAMES_IN_FLIGHT);
-    descriptorLayout.init(device);
-
     createDepthResources();
     createTextureImage();
     createTextureImageView();
@@ -80,25 +75,16 @@ void Engine::initVulkan() {
     createIndexBuffer();
     createUniformBuffers();
 
-    descriptorSet.init(device, descriptorPool, descriptorLayout,
-                       MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        descriptorSet.updateBufferInfo(0, uniformBuffers[i], 0,
-                                       sizeof(UniformBufferObject));
-    }
-    descriptorSet.updateImageInfo(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                  textureImageView, textureSampler);
-
     createCommandBuffers();
     createSyncObjects();
 }
 
 void Engine::addPipeline(const std::string &vertShaderPath,
-                         const std::string &fragShaderPath) {
-    Pipeline newPipeline;
-    newPipeline.init(device, vertShaderPath, fragShaderPath, descriptorLayout,
-                     swapChainImageFormat, findDepthFormat());
+                         const std::string &fragShaderPath,
+                         const Model &model) {
+    Pipeline newPipeline(&appDevice, vertShaderPath, fragShaderPath,
+                         swapChainImageFormat, findDepthFormat(), model,
+                         MAX_FRAMES_IN_FLIGHT);
     pipelines.push_back(std::move(newPipeline));
 }
 
@@ -135,15 +121,8 @@ void Engine::cleanup() {
     }
     pipelines.clear();
 
-    descriptorPool.cleanup();
-    descriptorLayout.cleanup();
-
     vkDestroySampler(device, textureSampler, nullptr);
     vkDestroyImageView(device, textureImageView, nullptr);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        appDevice.unmapMemory(&(uniformBuffersAllocations[i]));
-    }
 
     // vkDestroyImage(device, textureImage, nullptr);
     // vkFreeMemory(device, textureImageMemory, nullptr);
@@ -454,7 +433,7 @@ void Engine::transitionImageLayout(VkImage image, VkFormat format,
     endSingleTimeCommands(commandBuffer);
 }
 
-void Engine::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
+void Engine::copyBufferToImage(Buffer &buffer, VkImage image, uint32_t width,
                                uint32_t height) {
     VkCommandBuffer commandBuffer = beginSingleTimeCommands();
 
@@ -469,7 +448,7 @@ void Engine::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width,
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {width, height, 1};
 
-    vkCmdCopyBufferToImage(commandBuffer, buffer, image,
+    vkCmdCopyBufferToImage(commandBuffer, buffer.getBuffer(), image,
                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 
     endSingleTimeCommands(commandBuffer);
@@ -485,22 +464,19 @@ void Engine::createTextureImage() {
         throw std::runtime_error("failed to load texture image!");
     }
 
-    VkBuffer stagingBuffer;
-    auto bufferAllocation =
-        createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     stagingBuffer, VMA_MEMORY_USAGE_AUTO,
-                     VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+    Buffer stagingBuffer{
+        &appDevice,
+        imageSize,
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT};
 
     void *data;
-    if (appDevice.mapMemory(&bufferAllocation, &data) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to map texture staging buffer");
-    }
-    // vkMapMemory(device, stagingBufferMemory, 0, imageSize, 0, &data);
+    stagingBuffer.map(&data);
     memcpy(data, pixels, static_cast<size_t>(imageSize));
-    // vkUnmapMemory(device, stagingBufferMemory);
-    appDevice.unmapMemory(&bufferAllocation);
+    stagingBuffer.unmap();
 
     stbi_image_free(pixels);
     createImage(texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB,
@@ -519,140 +495,6 @@ void Engine::createTextureImage() {
     transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    // vkDestroyBuffer(device, stagingBuffer, nullptr);
-    // vkFreeMemory(device, stagingBufferMemory, nullptr);
-    appDevice.freeAllocationMemoryOnDemand(&bufferAllocation);
-}
-
-void Engine::createVertexBuffer() {
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    VkBuffer stagingBuffer;
-    // VkDeviceMemory stagingBufferMemory;
-    auto allocationPtr =
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     stagingBuffer, VMA_MEMORY_USAGE_AUTO,
-                     VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-    void *data;
-    // vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    if (appDevice.mapMemory(&allocationPtr, &data) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to map vertex staging buffer");
-    }
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    // vkUnmapMemory(device, stagingBufferMemory);
-    appDevice.unmapMemory(&allocationPtr);
-
-    createBuffer(bufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                     VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer,
-                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-                 VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
-
-    copyBuffer(stagingBuffer, vertexBuffer, bufferSize);
-
-    appDevice.freeAllocationMemoryOnDemand(&allocationPtr);
-    // vkDestroyBuffer(device, stagingBuffer, nullptr);
-    // vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void Engine::createIndexBuffer() {
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    VkBuffer stagingBuffer;
-    // VkDeviceMemory stagingBufferMemory;
-    auto allocationPtr =
-        createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                     VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                         VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-                     stagingBuffer, VMA_MEMORY_USAGE_AUTO,
-                     VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-    void *data;
-    // vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &data);
-    if (appDevice.mapMemory(&allocationPtr, &data) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to map index staging buffer");
-    }
-    memcpy(data, indices.data(), (size_t)bufferSize);
-    // vkUnmapMemory(device, stagingBufferMemory);
-    appDevice.unmapMemory(&allocationPtr);
-
-    createBuffer(bufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer,
-                 VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-                 VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
-
-    copyBuffer(stagingBuffer, indexBuffer, bufferSize);
-
-    appDevice.freeAllocationMemoryOnDemand(&allocationPtr);
-    // vkDestroyBuffer(device, stagingBuffer, nullptr);
-    // vkFreeMemory(device, stagingBufferMemory, nullptr);
-}
-
-void Engine::createUniformBuffers() {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-    uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersMapped.resize(MAX_FRAMES_IN_FLIGHT);
-    uniformBuffersAllocations.resize(MAX_FRAMES_IN_FLIGHT);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        auto uniformBufferAllocationHandle = createBuffer(
-            bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            uniformBuffers[i], VMA_MEMORY_USAGE_AUTO,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-        appDevice.mapMemory(&uniformBufferAllocationHandle,
-                            &uniformBuffersMapped[i]);
-        uniformBuffersAllocations[i] = uniformBufferAllocationHandle;
-
-        // vkMapMemory(device, uniformBuffersMemory[i], 0, bufferSize, 0,
-        // &uniformBuffersMapped[i]);
-    }
-}
-
-DeviceMemoryAllocationHandle
-Engine::createBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                     VkMemoryPropertyFlags properties, VkBuffer &buffer,
-                     VmaMemoryUsage memoryUsage,
-                     VmaAllocationCreateFlagBits allocBits) {
-    VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
-    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create buffer!");
-    }
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
-
-    auto suitableHeapMemoryType =
-        findMemoryType(memRequirements.memoryTypeBits, properties);
-
-    VmaAllocationCreateInfo vmaInfo{};
-    vmaInfo.memoryTypeBits = 1u << suitableHeapMemoryType;
-    vmaInfo.usage = memoryUsage;
-    vmaInfo.flags = allocBits;
-    vmaInfo.pool = VK_NULL_HANDLE;
-
-    DeviceMemoryAllocationHandle allocationHandle{};
-
-    if (appDevice.allocateBufferMemory(&bufferInfo, &vmaInfo, &buffer,
-                                       &allocationHandle) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate memory for buffer!");
-    }
-
-    return allocationHandle;
 }
 
 VkCommandBuffer Engine::beginSingleTimeCommands() {
@@ -688,34 +530,6 @@ void Engine::endSingleTimeCommands(VkCommandBuffer commandBuffer) {
     appDevice.submitToAvailableGraphicsQueue(&submitInfo, VK_NULL_HANDLE, true);
 
     vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
-}
-
-void Engine::copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer,
-                        VkDeviceSize size) {
-    VkCommandBuffer commandBuffer = beginSingleTimeCommands();
-
-    VkBufferCopy copyRegion{};
-    copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    endSingleTimeCommands(commandBuffer);
-}
-
-uint32_t Engine::findMemoryType(uint32_t typeFilter,
-                                VkMemoryPropertyFlags properties) const {
-    VkPhysicalDeviceMemoryProperties memProperties;
-    vkGetPhysicalDeviceMemoryProperties(*appDevice.getPhysicalDevice(),
-                                        &memProperties);
-
-    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
-        if ((typeFilter & (1 << i)) &&
-            (memProperties.memoryTypes[i].propertyFlags & properties) ==
-                properties) {
-            return i;
-        }
-    }
-
-    throw std::runtime_error("failed to find suitable memory type!");
 }
 
 void Engine::createCommandBuffers() {
@@ -853,6 +667,7 @@ void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer,
     for (const auto &pipeline : pipelines) {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline.getPipeline());
+        pipeline.updateUniformBuffer(currentFrame, mainCamera, swapChainExtent);
 
         VkViewport viewport{};
         viewport.x = 0.0f;
@@ -868,21 +683,19 @@ void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer,
         scissor.extent = swapChainExtent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        // TODO: make descriptor sets per-pipeline
-        VkBuffer vertexBuffers[] = {vertexBuffer};
+        VkBuffer vertexBuffers[] = {pipeline.getVertexBuffer()};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
 
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0,
+        vkCmdBindIndexBuffer(commandBuffer, pipeline.getIndexBuffer(), 0,
                              VK_INDEX_TYPE_UINT16);
 
-        auto currentDescriptorSet = descriptorSet.getSet(currentFrame);
+        auto currentDescriptorSet = pipeline.getDescriptorSet(currentFrame);
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                 pipeline.getLayout(), 0, 1,
                                 &currentDescriptorSet, 0, nullptr);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(indices.size()),
-                         1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, pipeline.getIndexCount(), 1, 0, 0, 0);
     }
 
     vkCmdEndRendering(commandBuffer);
@@ -920,32 +733,6 @@ void Engine::createSyncObjects() {
     }
 }
 
-void Engine::updateUniformBuffer(uint32_t currentImage) {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(
-                     currentTime - startTime)
-                     .count();
-
-    UniformBufferObject ubo{};
-    ubo.model = glm::rotate(glm::mat4(1.0f), time * glm::radians(45.0f),
-                            glm::vec3(0.0f, 0.0f, 1.0f));
-    ubo.model = glm::rotate(ubo.model, time * glm::radians(15.0f),
-                            glm::vec3(1.0f, 1.0f, 0.0f));
-    ubo.model =
-        glm::scale(ubo.model, glm::vec3(1.0f + std::sin(time),
-                                        1.0f + std::sin(time / 2), 1.0f));
-
-    ubo.view = mainCamera.GetViewMatrix();
-    ubo.proj = glm::perspective(
-        glm::radians(mainCamera.getZoom()),
-        swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped[currentImage], &ubo, sizeof(ubo));
-}
-
 void Engine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
@@ -962,7 +749,6 @@ void Engine::drawFrame() {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
-    updateUniformBuffer(currentFrame);
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
     vkResetCommandBuffer(commandBuffers[currentFrame],
                          /*VkCommandBufferResetFlagBits*/ 0);
@@ -1081,4 +867,21 @@ Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
 
         return actualExtent;
     }
+}
+
+uint32_t Engine::findMemoryType(uint32_t typeFilter,
+                                VkMemoryPropertyFlags properties) const {
+    VkPhysicalDeviceMemoryProperties memProperties;
+    vkGetPhysicalDeviceMemoryProperties(*appDevice.getPhysicalDevice(),
+                                        &memProperties);
+
+    for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
+        if ((typeFilter & (1 << i)) &&
+            (memProperties.memoryTypes[i].propertyFlags & properties) ==
+                properties) {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type!");
 }
