@@ -24,6 +24,12 @@ set(SOURCES
     src/Time.cpp
     src/Device.cpp
     src/VMAInit.cpp
+    src/Buffer.cpp
+    src/CommandPool.cpp
+    src/Pipeline.cpp
+    src/DescriptorSet.cpp
+    src/DescriptorLayout.cpp
+    src/DescriptorPool.cpp
 )
 
 add_executable(Triangle ${SOURCES})
