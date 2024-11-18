@@ -9,7 +9,6 @@
 
 #include "commonstructs.h"
 
-#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 
 Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
@@ -197,7 +196,7 @@ void Pipeline::createTextureResources() {
 }
 void Pipeline::createTextureImage() {
     int texWidth, texHeight, texChannels;
-    stbi_uc *pixels = stbi_load("images/sweetroll.png", &texWidth, &texHeight,
+    stbi_uc *pixels = stbi_load("images/dingus.jpg", &texWidth, &texHeight,
                                 &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
