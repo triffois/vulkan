@@ -10,9 +10,12 @@ int main() {
     Engine app;
     std::cout << "Engine created" << std::endl;
 
-    Model model = ModelLoader::loadFromGLTF("assets/dingus.glb");
-    std::cout << "Model loaded" << std::endl;
-    app.addPipeline("shaders/vert.spv", "shaders/frag.spv", model);
+    std::vector<Model> models = ModelLoader::loadFromGLTF("assets/dingus.glb");
+    std::cout << "Loaded " << models.size() << " models" << std::endl;
+
+    for (const auto &model : models) {
+        app.addPipeline("shaders/vert.spv", "shaders/frag.spv", model);
+    }
     std::cout << "Pipeline added" << std::endl;
 
     try {

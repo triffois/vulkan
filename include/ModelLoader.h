@@ -7,6 +7,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <string>
 #include <vector>
+#include <map>
 
 class ModelLoader {
   private:
@@ -22,16 +23,24 @@ class ModelLoader {
     struct Primitive {
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
+        int32_t materialIndex = -1;
     };
 
-    static void processNode(std::vector<Vertex> &outVertices,
-                            std::vector<uint32_t> &outIndices, const Node &node,
-                            const tinygltf::Model &model,
-                            const glm::mat4 &parentTransform);
+    static void processNode(std::map<int32_t, Primitive>& materialPrimitives,
+                          const Node& node,
+                          const tinygltf::Model& model,
+                          const glm::mat4& parentTransform);
+
+    static ModelLoader::Primitive processPrimitive(const tinygltf::Primitive& primitive,
+                                    const tinygltf::Model& model,
+                                    const glm::mat4& transform);
 
     static Node processGLTFNode(const tinygltf::Node &inputNode,
                                 const tinygltf::Model &model);
 
+    static std::vector<TextureData> processTextures(const tinygltf::Model& model);
+    static TextureData processImage(const tinygltf::Image& image, const tinygltf::Model& model);
+
   public:
-    static Model loadFromGLTF(const std::string &filename);
+    static std::vector<Model> loadFromGLTF(const std::string &filename);
 };

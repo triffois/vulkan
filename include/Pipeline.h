@@ -18,8 +18,7 @@ class Pipeline {
     Pipeline(Device *device, const std::string &vertShaderPath,
                    const std::string &fragShaderPath, VkFormat colorFormat,
                    VkFormat depthFormat, const Model &model,
-                   uint32_t maxFramesInFlight,
-                   std::vector<std::unique_ptr<Image>> images);
+                   uint32_t maxFramesInFlight);
 
     void cleanup();
     void updateUniformBuffer(uint32_t currentFrame, Camera &camera,

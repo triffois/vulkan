@@ -73,12 +73,9 @@ void Engine::addPipeline(const std::string &vertShaderPath,
                          const std::string &fragShaderPath,
                          const Model &model) {
     std::cout << "Adding pipeline" << std::endl;
-    std::vector<std::unique_ptr<Image>> images;
-    images.push_back(std::make_unique<Image>(appDevice));
-
     Pipeline pipeline(&appDevice, vertShaderPath, fragShaderPath,
                       swapChainImageFormat, findDepthFormat(), model,
-                      MAX_FRAMES_IN_FLIGHT, std::move(images));
+                      MAX_FRAMES_IN_FLIGHT);
     std::cout << "Pipeline created" << std::endl;
     pipelines.push_back(std::move(pipeline));
 }

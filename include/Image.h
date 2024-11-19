@@ -33,6 +33,11 @@ class Image : public INeedCleanUp {
     void copyBufferToImage(VkBuffer buffer, uint32_t width, uint32_t height);
     void createTextureImage(const std::string &texturePath);
     void createTextureImageView();
+    void createTextureImageFromMemory(const unsigned char* pixels, 
+                                    int width, 
+                                    int height, 
+                                    int channels);
+    void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
     VkImage getVkImage() const { return image; };
     VkImageView getVkImageView() const { return imageView; };
