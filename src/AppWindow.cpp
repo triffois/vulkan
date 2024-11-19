@@ -15,7 +15,7 @@ static void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
     static float lastCursorPosY{WINDOWHEIGHT / 2.0};
 
     float dX = xpos - lastCursorPosX;
-    float dY = ypos - lastCursorPosY;
+    float dY = lastCursorPosY - ypos;
     lastCursorPosX = xpos;
     lastCursorPosY = ypos;
 
