@@ -71,33 +71,27 @@ Camera *Engine::getCamera() { return &mainCamera; }
 void Engine::processKeyboardInput() {
     auto window = appWindow.getWindow();
 
+    // Horizontal movement (WASD)
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            mainCamera.ProcessKeyboard(Camera_Movement::NW, Time::deltaTime());
-        } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            mainCamera.ProcessKeyboard(Camera_Movement::NE, Time::deltaTime());
-        } else {
-            mainCamera.ProcessKeyboard(Camera_Movement::FORWARD,
-                                       Time::deltaTime());
-        }
-        return;
+        mainCamera.ProcessKeyboard(Camera_Movement::FORWARD, Time::deltaTime());
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-            mainCamera.ProcessKeyboard(Camera_Movement::SW, Time::deltaTime());
-        } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-            mainCamera.ProcessKeyboard(Camera_Movement::SE, Time::deltaTime());
-        } else {
-            mainCamera.ProcessKeyboard(Camera_Movement::BACKWARD,
-                                       Time::deltaTime());
-        }
-        return;
+        mainCamera.ProcessKeyboard(Camera_Movement::BACKWARD,
+                                   Time::deltaTime());
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         mainCamera.ProcessKeyboard(Camera_Movement::LEFT, Time::deltaTime());
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         mainCamera.ProcessKeyboard(Camera_Movement::RIGHT, Time::deltaTime());
+    }
+
+    // Vertical movement (Space/Shift)
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
+        mainCamera.ProcessKeyboard(Camera_Movement::UP, Time::deltaTime());
+    }
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
+        mainCamera.ProcessKeyboard(Camera_Movement::DOWN, Time::deltaTime());
     }
 }
 
