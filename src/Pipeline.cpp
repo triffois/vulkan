@@ -15,14 +15,19 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                    const std::string &fragShaderPath, VkFormat colorFormat,
                    VkFormat depthFormat, const Model &model,
                    uint32_t maxFramesInFlight,
-                   std::vector<std::unique_ptr<Image>> images)
-    : device(device), model(model), images(std::move(images)) {
-    std::cout << "Creating pipeline" << std::endl;
+                   std::vector<std::unique_ptr<Image>> inputImages)
+    : device(device), 
+      model(model),
+      images(std::make_move_iterator(inputImages.begin()), 
+             std::make_move_iterator(inputImages.end())) {
+    
+    std::cout << "Creating pipeline with " << images.size() << " images" << std::endl;
     createUniformBuffers(maxFramesInFlight);
     createVertexBuffer();
     createIndexBuffer();
     createTextureResources();
-    std::cout << "Images size:" << images.size() << std::endl;
+    std::cout << "Images size after texture resources: " << images.size()
+              << std::endl;
     std::cout << "Created texture resources" << std::endl;
     descriptorLayout.init(*device->getDevice());
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
@@ -37,12 +42,12 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
         // TODO make this work with multiple images
-        std:: cout << "Updating image info" << std::endl;
-        std:: cout << "Images size: " << images.size() << std::endl;
+        std::cout << "Updating image info" << std::endl;
+        std::cout << "Images size: " << images.size() << std::endl;
         descriptorSet.updateImageInfo(
             1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             images[0]->getVkImageView(), textureSampler);
-            std::cout << "Updated image info" << std::endl;
+        std::cout << "Updated image info" << std::endl;
     }
     std::cout << "Updated descriptor set" << std::endl;
     auto vertShaderCode = readFile(vertShaderPath);
@@ -194,12 +199,13 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
 }
 
 void Pipeline::createTextureResources() {
-    // TODO multiple images
+    std::cout << "Starting createTextureResources with images.size(): " << images.size() << std::endl;
     images[0]->createTextureImage("images/dingus.jpg");
+    std::cout << "After createTextureImage, images.size(): " << images.size() << std::endl;
     images[0]->createTextureImageView();
+    std::cout << "After createTextureImageView, images.size(): " << images.size() << std::endl;
     createTextureSampler();
-    std::cout << "Images size"<<images.size() << std::endl;    
-
+    std::cout << "After createTextureSampler, images.size(): " << images.size() << std::endl;
 }
 
 void Pipeline::createTextureSampler() {
