@@ -10,56 +10,40 @@ void Engine::run() { mainLoop(); }
 
 Camera *Engine::getCamera() { return &mainCamera; }
 
-void Engine::processKeyboardInput()
-{
+void Engine::processKeyboardInput() {
     auto window = appWindow.getWindow();
 
-    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-    {
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             mainCamera.ProcessKeyboard(Camera_Movement::NW, Time::deltaTime());
-        }
-        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        {
+        } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             mainCamera.ProcessKeyboard(Camera_Movement::NE, Time::deltaTime());
-        }
-        else
-        {
+        } else {
             mainCamera.ProcessKeyboard(Camera_Movement::FORWARD,
                                        Time::deltaTime());
         }
         return;
     }
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-    {
-        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        {
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
             mainCamera.ProcessKeyboard(Camera_Movement::SW, Time::deltaTime());
-        }
-        else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        {
+        } else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
             mainCamera.ProcessKeyboard(Camera_Movement::SE, Time::deltaTime());
-        }
-        else
-        {
+        } else {
             mainCamera.ProcessKeyboard(Camera_Movement::BACKWARD,
                                        Time::deltaTime());
         }
         return;
     }
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-    {
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
         mainCamera.ProcessKeyboard(Camera_Movement::LEFT, Time::deltaTime());
     }
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-    {
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
         mainCamera.ProcessKeyboard(Camera_Movement::RIGHT, Time::deltaTime());
     }
 }
 
-void Engine::initVulkan()
-{
+void Engine::initVulkan() {
     appInstance.init();
     appInstance.addComponentToCleanUp(&appInstance);
 
@@ -87,24 +71,20 @@ void Engine::initVulkan()
 
 void Engine::addPipeline(const std::string &vertShaderPath,
                          const std::string &fragShaderPath,
-                         const Model &model)
-{
+                         const Model &model) {
     std::cout << "Adding pipeline" << std::endl;
     std::vector<std::unique_ptr<Image>> images;
     images.push_back(std::make_unique<Image>(appDevice));
 
     Pipeline pipeline(&appDevice, vertShaderPath, fragShaderPath,
                       swapChainImageFormat, findDepthFormat(), model,
-                      MAX_FRAMES_IN_FLIGHT,std::move(images));
+                      MAX_FRAMES_IN_FLIGHT, std::move(images));
     std::cout << "Pipeline created" << std::endl;
-        // pipelines.push_back(std::move(pipeline));
-    
+    pipelines.push_back(std::move(pipeline));
 }
 
-void Engine::mainLoop()
-{
-    while (!glfwWindowShouldClose(appWindow.getWindow()))
-    {
+void Engine::mainLoop() {
+    while (!glfwWindowShouldClose(appWindow.getWindow())) {
         glfwPollEvents();
         peripheralsManager.updatePeripheralsOnFrame();
         processKeyboardInput();
@@ -114,28 +94,24 @@ void Engine::mainLoop()
     vkDeviceWaitIdle(device);
 }
 
-void Engine::cleanupSwapChain()
-{
+void Engine::cleanupSwapChain() {
     vkDestroyImageView(device, depthImageView, nullptr);
 
     // vkDestroyImage(device, depthImage, nullptr);
     // vkFreeMemory(device, depthImageMemory, nullptr);
     appDevice.freeAllocationMemoryOnDemand(&depthImageAllocation);
 
-    for (auto imageView : swapChainImageViews)
-    {
+    for (auto imageView : swapChainImageViews) {
         vkDestroyImageView(device, imageView, nullptr);
     }
 
     vkDestroySwapchainKHR(device, swapChain, nullptr);
 }
 
-void Engine::cleanup()
-{
+void Engine::cleanup() {
     cleanupSwapChain();
 
-    for (auto &pipeline : pipelines)
-    {
+    for (auto &pipeline : pipelines) {
         pipeline.cleanup();
     }
     pipelines.clear();
@@ -149,8 +125,7 @@ void Engine::cleanup()
     // vkDestroyBuffer(device, vertexBuffer, nullptr);
     // vkFreeMemory(device, vertexBufferMemory, nullptr);
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
         vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(device, inFlightFences[i], nullptr);
@@ -163,12 +138,10 @@ void Engine::cleanup()
     glfwTerminate();
 }
 
-void Engine::recreateSwapChain()
-{
+void Engine::recreateSwapChain() {
     int width = 0, height = 0;
     glfwGetFramebufferSize(appWindow.getWindow(), &width, &height);
-    while (width == 0 || height == 0)
-    {
+    while (width == 0 || height == 0) {
         glfwGetFramebufferSize(appWindow.getWindow(), &width, &height);
         glfwWaitEvents();
     }
@@ -182,8 +155,7 @@ void Engine::recreateSwapChain()
     createDepthResources();
 }
 
-void Engine::createSwapChain()
-{
+void Engine::createSwapChain() {
     SwapChainSupportDetails swapChainSupport =
         appDevice.querySwapChainSupportCurrent();
 
@@ -195,8 +167,7 @@ void Engine::createSwapChain()
 
     uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
     if (swapChainSupport.capabilities.maxImageCount > 0 &&
-        imageCount > swapChainSupport.capabilities.maxImageCount)
-    {
+        imageCount > swapChainSupport.capabilities.maxImageCount) {
         imageCount = swapChainSupport.capabilities.maxImageCount;
     }
 
@@ -215,14 +186,11 @@ void Engine::createSwapChain()
     uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(),
                                      indices.presentFamily.value()};
 
-    if (indices.graphicsFamily != indices.presentFamily)
-    {
+    if (indices.graphicsFamily != indices.presentFamily) {
         createInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
         createInfo.pQueueFamilyIndices = queueFamilyIndices;
-    }
-    else
-    {
+    } else {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
@@ -232,8 +200,7 @@ void Engine::createSwapChain()
     createInfo.clipped = VK_TRUE;
 
     if (vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapChain) !=
-        VK_SUCCESS)
-    {
+        VK_SUCCESS) {
         throw std::runtime_error("failed to create swap chain!");
     }
 
@@ -246,20 +213,17 @@ void Engine::createSwapChain()
     swapChainExtent = extent;
 }
 
-void Engine::createImageViews()
-{
+void Engine::createImageViews() {
     swapChainImageViews.resize(swapChainImages.size());
 
-    for (uint32_t i = 0; i < swapChainImages.size(); i++)
-    {
+    for (uint32_t i = 0; i < swapChainImages.size(); i++) {
         swapChainImageViews[i] =
             appDevice.createImageView(swapChainImages[i], swapChainImageFormat,
                                       VK_IMAGE_ASPECT_COLOR_BIT);
     }
 }
 
-void Engine::createCommandPool()
-{
+void Engine::createCommandPool() {
     QueueFamilyIndices queueFamilyIndices =
         appDevice.findQueueFamiliesCurrent();
 
@@ -269,14 +233,12 @@ void Engine::createCommandPool()
     poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
 
     if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) !=
-        VK_SUCCESS)
-    {
+        VK_SUCCESS) {
         throw std::runtime_error("Failed to create graphics command pool!");
     }
 }
 
-void Engine::createDepthResources()
-{
+void Engine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
     depthImageAllocation = appDevice.createImage(
@@ -291,22 +253,17 @@ void Engine::createDepthResources()
 
 VkFormat Engine::findSupportedFormat(const std::vector<VkFormat> &candidates,
                                      VkImageTiling tiling,
-                                     VkFormatFeatureFlags features)
-{
-    for (VkFormat format : candidates)
-    {
+                                     VkFormatFeatureFlags features) {
+    for (VkFormat format : candidates) {
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(*appDevice.getPhysicalDevice(),
                                             format, &props);
 
         if (tiling == VK_IMAGE_TILING_LINEAR &&
-            (props.linearTilingFeatures & features) == features)
-        {
+            (props.linearTilingFeatures & features) == features) {
             return format;
-        }
-        else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
-                 (props.optimalTilingFeatures & features) == features)
-        {
+        } else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
+                   (props.optimalTilingFeatures & features) == features) {
             return format;
         }
     }
@@ -314,8 +271,7 @@ VkFormat Engine::findSupportedFormat(const std::vector<VkFormat> &candidates,
     throw std::runtime_error("failed to find supported format!");
 }
 
-VkFormat Engine::findDepthFormat()
-{
+VkFormat Engine::findDepthFormat() {
     return findSupportedFormat({VK_FORMAT_D32_SFLOAT,
                                 VK_FORMAT_D32_SFLOAT_S8_UINT,
                                 VK_FORMAT_D24_UNORM_S8_UINT},
@@ -323,14 +279,12 @@ VkFormat Engine::findDepthFormat()
                                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 }
 
-bool Engine::hasStencilComponent(VkFormat format)
-{
+bool Engine::hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
            format == VK_FORMAT_D24_UNORM_S8_UINT;
 }
 
-void Engine::createCommandBuffers()
-{
+void Engine::createCommandBuffers() {
     commandBuffers = appDevice.getGraphicsCommandPool()->allocateCommandBuffers(
         MAX_FRAMES_IN_FLIGHT);
 }
@@ -338,8 +292,7 @@ void Engine::createCommandBuffers()
 void Engine::transitionDepthImageLayout(VkImageLayout fromLayout,
                                         VkImageLayout toLayout,
                                         VkImage &depthImage,
-                                        VkCommandBuffer &bufferToRecordOn)
-{
+                                        VkCommandBuffer &bufferToRecordOn) {
     VkImageMemoryBarrier imageBarrier{};
     imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageBarrier.oldLayout = fromLayout;
@@ -356,13 +309,10 @@ void Engine::transitionDepthImageLayout(VkImageLayout fromLayout,
     VkPipelineStageFlags srcMask;
     VkPipelineStageFlags dstMask;
     if (fromLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-        toLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL)
-    {
+        toLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
         srcMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         dstMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-    }
-    else
-    {
+    } else {
         throw std::invalid_argument(
             "Unsupported swapchain image layout transition!");
     }
@@ -374,8 +324,7 @@ void Engine::transitionDepthImageLayout(VkImageLayout fromLayout,
 void Engine::transitionSwapchainImageLayout(VkImageLayout fromLayout,
                                             VkImageLayout toLayout,
                                             uint32_t swapchainIdx,
-                                            VkCommandBuffer &bufferToRecordOn)
-{
+                                            VkCommandBuffer &bufferToRecordOn) {
     VkImageMemoryBarrier imageBarrier{};
     imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageBarrier.oldLayout = fromLayout;
@@ -392,19 +341,14 @@ void Engine::transitionSwapchainImageLayout(VkImageLayout fromLayout,
     VkPipelineStageFlags srcMask;
     VkPipelineStageFlags dstMask;
     if (fromLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL &&
-        toLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-    {
+        toLayout == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
         srcMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         dstMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
-    }
-    else if (fromLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-             toLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-    {
+    } else if (fromLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
+               toLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
         srcMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         dstMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-    }
-    else
-    {
+    } else {
         throw std::invalid_argument(
             "Unsupported swapchain image layout transition!");
     }
@@ -414,13 +358,11 @@ void Engine::transitionSwapchainImageLayout(VkImageLayout fromLayout,
 }
 
 void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer,
-                                 uint32_t imageIndex)
-{
+                                 uint32_t imageIndex) {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
 
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS)
-    {
+    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("Failed to begin recording command buffer!");
     }
 
@@ -464,8 +406,7 @@ void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer,
 
     vkCmdBeginRendering(commandBuffer, &renderingInfo);
 
-    for (const auto &pipeline : pipelines)
-    {
+    for (const auto &pipeline : pipelines) {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                           pipeline.getPipeline());
         pipeline.updateUniformBuffer(currentFrame, mainCamera, swapChainExtent);
@@ -504,14 +445,12 @@ void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer,
                                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, imageIndex,
                                    commandBuffer);
 
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-    {
+    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("failed to record command buffer!");
     }
 }
 
-void Engine::createSyncObjects()
-{
+void Engine::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
@@ -523,23 +462,20 @@ void Engine::createSyncObjects()
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
-    {
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
         if (vkCreateSemaphore(device, &semaphoreInfo, nullptr,
                               &imageAvailableSemaphores[i]) != VK_SUCCESS ||
             vkCreateSemaphore(device, &semaphoreInfo, nullptr,
                               &renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) !=
-                VK_SUCCESS)
-        {
+                VK_SUCCESS) {
             throw std::runtime_error(
                 "failed to create synchronization objects for a frame!");
         }
     }
 }
 
-void Engine::drawFrame()
-{
+void Engine::drawFrame() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
 
@@ -548,13 +484,10 @@ void Engine::drawFrame()
         device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
         VK_NULL_HANDLE, &imageIndex);
 
-    if (result == VK_ERROR_OUT_OF_DATE_KHR)
-    {
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
         recreateSwapChain();
         return;
-    }
-    else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
-    {
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
         throw std::runtime_error("failed to acquire swap chain image!");
     }
 
@@ -587,8 +520,7 @@ void Engine::drawFrame()
     // }
 
     if (appDevice.submitToAvailableGraphicsQueue(
-            &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
-    {
+            &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
@@ -608,21 +540,17 @@ void Engine::drawFrame()
     result = appDevice.submitToAvailablePresentQueue(&presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-        framebufferResized)
-    {
+        framebufferResized) {
         framebufferResized = false;
         recreateSwapChain();
-    }
-    else if (result != VK_SUCCESS)
-    {
+    } else if (result != VK_SUCCESS) {
         throw std::runtime_error("failed to present swap chain image!");
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-VkShaderModule Engine::createShaderModule(const std::vector<char> &code)
-{
+VkShaderModule Engine::createShaderModule(const std::vector<char> &code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
@@ -630,8 +558,7 @@ VkShaderModule Engine::createShaderModule(const std::vector<char> &code)
 
     VkShaderModule shaderModule;
     if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) !=
-        VK_SUCCESS)
-    {
+        VK_SUCCESS) {
         throw std::runtime_error("failed to create shader module!");
     }
 
@@ -639,13 +566,10 @@ VkShaderModule Engine::createShaderModule(const std::vector<char> &code)
 }
 
 VkSurfaceFormatKHR Engine::chooseSwapSurfaceFormat(
-    const std::vector<VkSurfaceFormatKHR> &availableFormats)
-{
-    for (const auto &availableFormat : availableFormats)
-    {
+    const std::vector<VkSurfaceFormatKHR> &availableFormats) {
+    for (const auto &availableFormat : availableFormats) {
         if (availableFormat.format == VK_FORMAT_B8G8R8A8_SRGB &&
-            availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-        {
+            availableFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
             return availableFormat;
         }
     }
@@ -654,12 +578,9 @@ VkSurfaceFormatKHR Engine::chooseSwapSurfaceFormat(
 }
 
 VkPresentModeKHR Engine::chooseSwapPresentMode(
-    const std::vector<VkPresentModeKHR> &availablePresentModes)
-{
-    for (const auto &availablePresentMode : availablePresentModes)
-    {
-        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR)
-        {
+    const std::vector<VkPresentModeKHR> &availablePresentModes) {
+    for (const auto &availablePresentMode : availablePresentModes) {
+        if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
             return availablePresentMode;
         }
     }
@@ -668,15 +589,11 @@ VkPresentModeKHR Engine::chooseSwapPresentMode(
 }
 
 VkExtent2D
-Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities)
-{
+Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
     if (capabilities.currentExtent.width !=
-        std::numeric_limits<uint32_t>::max())
-    {
+        std::numeric_limits<uint32_t>::max()) {
         return capabilities.currentExtent;
-    }
-    else
-    {
+    } else {
         int width, height;
         glfwGetFramebufferSize(appWindow.getWindow(), &width, &height);
 

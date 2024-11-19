@@ -35,10 +35,7 @@ class Image : public INeedCleanUp {
     void createTextureImageView();
 
     VkImage getVkImage() const { return image; };
-    VkImageView getVkImageView() const {
-        std::cout << "getVkImageView" << std::endl;
-        return imageView;
-    };
+    VkImageView getVkImageView() const { return imageView; };
 
   private:
     Device &device;
