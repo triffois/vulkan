@@ -238,7 +238,7 @@ void Engine::createCommandPool() {
 void Engine::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImageAllocation = appDevice.createImage(
+    depthImageAllocation = image.createImageOut(
         swapChainExtent.width, swapChainExtent.height, depthFormat,
         VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage,

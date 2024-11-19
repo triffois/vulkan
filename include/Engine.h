@@ -38,7 +38,7 @@ class Engine {
     AppWindow appWindow;
     Device appDevice;
     VkDevice device;
-
+    Image image = Image(appDevice);
     std::vector<Pipeline> pipelines;
 
     EnginePeripheralsManager peripheralsManager;

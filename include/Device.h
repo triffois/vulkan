@@ -13,10 +13,11 @@
 
 struct DeviceMemoryAllocationHandle;
 
-class Device : public INeedCleanUp {
+class Device : public INeedCleanUp
+{
     friend struct DeviceMemoryAllocationHandle;
 
-  public:
+public:
     void init(const AppWindow *appWindow, const AppInstance *appInstance);
 
     Device() = default;
@@ -43,19 +44,9 @@ class Device : public INeedCleanUp {
     // TODO: move out this bunch into a separate abstraction
     uint32_t findMemoryType(uint32_t typeFilter,
                             VkMemoryPropertyFlags properties) const;
-    DeviceMemoryAllocationHandle createImage(
-        uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
-        VkImageUsageFlags usage, VkMemoryPropertyFlags properties,
-        VkImage &image,
-        VmaMemoryUsage memoryUsage = VmaMemoryUsage::VMA_MEMORY_USAGE_AUTO,
-        VmaAllocationCreateFlagBits allocFlagBits =
-            VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
+
     VkImageView createImageView(VkImage image, VkFormat format,
                                 VkImageAspectFlags aspectFlags);
-    void transitionImageLayout(VkImage image, VkFormat format,
-                               VkImageLayout oldLayout,
-                               VkImageLayout newLayout);
-
     // to abstract user from any particular memory allocation algorithm, the
     // 'descriptor' returned to user in the pointer to AllocationInfoCache cast
     // to void *
@@ -77,7 +68,7 @@ class Device : public INeedCleanUp {
     VkResult unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const;
     CommandPool *getGraphicsCommandPool() { return graphicsCommandPool; }
 
-  private:
+private:
     struct DeviceMemoryAllocation;
 
     void pickPhysicalDevice();
@@ -91,7 +82,7 @@ class Device : public INeedCleanUp {
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     void freeAllocation(DeviceMemoryAllocation *allocationToFree);
 
-  private:
+private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
     VkQueue graphicsQueue;
@@ -103,11 +94,13 @@ class Device : public INeedCleanUp {
 
     CommandPool *graphicsCommandPool;
 
-    struct DeviceMemoryAllocation {
+    struct DeviceMemoryAllocation
+    {
         std::variant<VkBuffer, VkImage> allocatedObject{};
         VmaAllocation allocation{};
 
-        bool operator==(const DeviceMemoryAllocation &other) const {
+        bool operator==(const DeviceMemoryAllocation &other) const
+        {
             if (allocatedObject.index() != other.allocatedObject.index())
                 return false;
 
@@ -123,7 +116,8 @@ class Device : public INeedCleanUp {
             return false;
         }
 
-        bool operator!=(const DeviceMemoryAllocation &other) const {
+        bool operator!=(const DeviceMemoryAllocation &other) const
+        {
             return !operator==(other);
         }
     };
@@ -131,9 +125,10 @@ class Device : public INeedCleanUp {
     std::list<DeviceMemoryAllocation> allocations;
 };
 
-struct DeviceMemoryAllocationHandle {
+struct DeviceMemoryAllocationHandle
+{
     friend class Device;
 
-  private:
+private:
     Device::DeviceMemoryAllocation *allocationInfo{};
 };

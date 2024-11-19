@@ -7,45 +7,53 @@
 #include <cstdint>
 #include <string>
 
-class Image : public INeedCleanUp {
-  public:
-    Image() = default;
-    ~Image() = default;
+class Image : public INeedCleanUp
+{
+public:
+  Image() = default;
+  ~Image() = default;
 
-    Image(const Image &) = delete;
-    Image(Image &&) = delete;
-    Image(Device &device) : device(device) {}
+  Image(const Image &) = delete;
+  Image(Image &&) = delete;
+  Image(Device &device) : device(device) {}
 
-    Image &operator=(const Image &) = delete;
-    Image &operator=(Image &&) = delete;
+  Image &operator=(const Image &) = delete;
+  Image &operator=(Image &&) = delete;
 
-    void cleanUp(const AppContext &context) override;
-    void createImage(uint32_t width, uint32_t height, VkFormat format,
-                     VkImageTiling tiling, VkImageUsageFlags usage,
-                     VkMemoryPropertyFlags properties,
-                     VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
-                     VmaAllocationCreateFlagBits allocFlagBits =
-                         VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
-    VkImageView createImageView(VkFormat format,
-                                VkImageAspectFlags aspectFlags);
-    void transitionImageLayout(VkFormat format, VkImageLayout oldLayout,
-                               VkImageLayout newLayout);
-    void copyBufferToImage(VkBuffer buffer, uint32_t width, uint32_t height);
-    void createTextureImage(const std::string &texturePath);
-    void createTextureImageView();
-    void createTextureImageFromMemory(const unsigned char* pixels, 
-                                    int width, 
-                                    int height, 
+  void cleanUp(const AppContext &context) override;
+  void createImage(uint32_t width, uint32_t height, VkFormat format,
+                   VkImageTiling tiling, VkImageUsageFlags usage,
+                   VkMemoryPropertyFlags properties,
+                   VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
+                   VmaAllocationCreateFlagBits allocFlagBits =
+                       VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
+  VkImageView createImageView(VkFormat format,
+                              VkImageAspectFlags aspectFlags);
+  DeviceMemoryAllocationHandle createImageOut(uint32_t width, uint32_t height, VkFormat format,
+                                              VkImageTiling tiling, VkImageUsageFlags usage,
+                                              VkMemoryPropertyFlags properties, VkImage &image,
+                                              VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
+                                              VmaAllocationCreateFlagBits allocFlagBits =
+                                                  VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
+
+  void transitionImageLayout(VkFormat format, VkImageLayout oldLayout,
+                             VkImageLayout newLayout);
+  void copyBufferToImage(VkBuffer buffer, uint32_t width, uint32_t height);
+  void createTextureImage(const std::string &texturePath);
+  void createTextureImageView();
+  void createTextureImageFromMemory(const unsigned char *pixels,
+                                    int width,
+                                    int height,
                                     int channels);
-    void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
+  void transitionImageLayout(VkImageLayout oldLayout, VkImageLayout newLayout);
 
-    VkImage getVkImage() const { return image; };
-    VkImageView getVkImageView() const { return imageView; };
+  VkImage getVkImage() const { return image; };
+  VkImageView getVkImageView() const { return imageView; };
 
-  private:
-    Device &device;
-    VkImage image;
-    VkImageView imageView;
-    VmaAllocation imageAllocation;
-    VmaAllocator allocator;
+private:
+  Device &device;
+  VkImage image;
+  VkImageView imageView;
+  VmaAllocation imageAllocation;
+  VmaAllocator allocator;
 };
