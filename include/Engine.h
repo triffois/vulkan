@@ -17,6 +17,7 @@
 #include "Camera.h"
 #include "Device.h"
 #include "EnginePeripherals.h"
+#include "Image.h"
 
 class Engine {
   public:

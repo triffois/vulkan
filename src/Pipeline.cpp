@@ -15,13 +15,12 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                    const std::string &fragShaderPath, VkFormat colorFormat,
                    VkFormat depthFormat, const Model &model,
                    uint32_t maxFramesInFlight)
-    : device(device), model(model) {
+    : device(device), model(model),image(*device) {
     createUniformBuffers(maxFramesInFlight);
     createVertexBuffer();
     createIndexBuffer();
-
     createTextureResources();
-
+    Image img(*device);
     descriptorLayout.init(*device->getDevice());
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
@@ -30,14 +29,13 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
     }
-
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
 
         descriptorSet.updateImageInfo(1,
                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                      textureImageView, textureSampler);
+                                      image.getVkImageView(), textureSampler);
     }
 
     auto vertShaderCode = readFile(vertShaderPath);
@@ -187,59 +185,13 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     // Cleanup shader modules
     vkDestroyShaderModule(*device->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(*device->getDevice(), vertShaderModule, nullptr);
+    std::cout << "Pipeline created constr" << std::endl;
 }
 
 void Pipeline::createTextureResources() {
-    createTextureImage();
-    createTextureImageView();
+    image.createTextureImage("../images/dingus.jpg");
+    image.createTextureImageView();
     createTextureSampler();
-}
-void Pipeline::createTextureImage() {
-    int texWidth, texHeight, texChannels;
-    stbi_uc *pixels = stbi_load("images/dingus.jpg", &texWidth, &texHeight,
-                                &texChannels, STBI_rgb_alpha);
-    VkDeviceSize imageSize = texWidth * texHeight * 4;
-
-    if (!pixels) {
-        throw std::runtime_error("failed to load texture image!");
-    }
-
-    Buffer stagingBuffer(
-        device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        VMA_MEMORY_USAGE_AUTO,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-    void *data;
-    stagingBuffer.map(&data);
-    memcpy(data, pixels, static_cast<size_t>(imageSize));
-    stagingBuffer.unmap();
-
-    stbi_image_free(pixels);
-
-    textureImageAllocation = device->createImage(
-        texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage,
-        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
-
-    device->transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                                  VK_IMAGE_LAYOUT_UNDEFINED,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-
-    stagingBuffer.copyToImage(textureImage, static_cast<uint32_t>(texWidth),
-                              static_cast<uint32_t>(texHeight));
-
-    device->transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_SRGB,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-}
-
-void Pipeline::createTextureImageView() {
-    textureImageView = device->createImageView(
-        textureImage, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void Pipeline::createTextureSampler() {
@@ -296,10 +248,6 @@ void Pipeline::cleanup() {
     }
 
     vkDestroySampler(*device->getDevice(), textureSampler, nullptr);
-    vkDestroyImageView(*device->getDevice(), textureImageView, nullptr);
-    device->freeAllocationMemoryOnDemand(&textureImageAllocation);
-    vkDestroyImage(*device->getDevice(), textureImage, nullptr);
-
     // TODO: finish cleanup
 }
 

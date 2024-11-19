@@ -7,6 +7,7 @@
 #include "DescriptorSet.h"
 #include "Device.h"
 #include "Model.h"
+#include "Image.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -39,11 +40,9 @@ class Pipeline {
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
     Model model;
+    Image image;
 
-    VkImage textureImage;
-    VkImageView textureImageView;
     VkSampler textureSampler;
-    DeviceMemoryAllocationHandle textureImageAllocation;
 
     std::unique_ptr<Buffer> vertexBuffer;
     std::unique_ptr<Buffer> indexBuffer;
@@ -74,6 +73,4 @@ class Pipeline {
 
     void createTextureResources();
     void createTextureSampler();
-    void createTextureImage();
-    void createTextureImageView();
 };
