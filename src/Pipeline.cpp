@@ -14,13 +14,13 @@
 Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                    const std::string &fragShaderPath, VkFormat colorFormat,
                    VkFormat depthFormat, const Model &model,
-                   uint32_t maxFramesInFlight)
-    : device(device), model(model),image(*device) {
+                   uint32_t maxFramesInFlight,
+                   std::vector<std::unique_ptr<Image>> images)
+    : device(device), model(model), images(std::move(images)) {
     createUniformBuffers(maxFramesInFlight);
     createVertexBuffer();
     createIndexBuffer();
     createTextureResources();
-    Image img(*device);
     descriptorLayout.init(*device->getDevice());
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
@@ -33,9 +33,10 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
 
-        descriptorSet.updateImageInfo(1,
-                                      VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                      image.getVkImageView(), textureSampler);
+        // TODO make this work with multiple images
+        descriptorSet.updateImageInfo(
+            1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            images[0]->getVkImageView(), textureSampler);
     }
 
     auto vertShaderCode = readFile(vertShaderPath);
@@ -189,8 +190,9 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
 }
 
 void Pipeline::createTextureResources() {
-    image.createTextureImage("../images/dingus.jpg");
-    image.createTextureImageView();
+    // TODO multiple images
+    images[0]->createTextureImage("../images/dingus.jpg");
+    images[0]->createTextureImageView();
     createTextureSampler();
 }
 

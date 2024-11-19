@@ -6,8 +6,8 @@
 #include "DescriptorPool.h"
 #include "DescriptorSet.h"
 #include "Device.h"
-#include "Model.h"
 #include "Image.h"
+#include "Model.h"
 #include <memory>
 #include <string>
 #include <vector>
@@ -18,7 +18,8 @@ class Pipeline {
     Pipeline(Device *device, const std::string &vertShaderPath,
              const std::string &fragShaderPath, VkFormat colorFormat,
              VkFormat depthFormat, const Model &model,
-             uint32_t maxFramesInFlight);
+             uint32_t maxFramesInFlight,
+             std::vector<std::unique_ptr<Image>> images);
 
     void cleanup();
     void updateUniformBuffer(uint32_t currentFrame, Camera &camera,
@@ -40,7 +41,7 @@ class Pipeline {
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
     Model model;
-    Image image;
+    std::vector<std::unique_ptr<Image>> images;
 
     VkSampler textureSampler;
 
