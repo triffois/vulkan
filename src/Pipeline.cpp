@@ -17,14 +17,18 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                    uint32_t maxFramesInFlight,
                    std::vector<std::unique_ptr<Image>> images)
     : device(device), model(model), images(std::move(images)) {
+    std::cout << "Creating pipeline" << std::endl;
     createUniformBuffers(maxFramesInFlight);
     createVertexBuffer();
     createIndexBuffer();
     createTextureResources();
+    std::cout << "Images size:" << images.size() << std::endl;
+    std::cout << "Created texture resources" << std::endl;
     descriptorLayout.init(*device->getDevice());
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
                        maxFramesInFlight);
+    std::cout << "Created descriptor set" << std::endl;
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
@@ -32,13 +36,15 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
-
         // TODO make this work with multiple images
+        std:: cout << "Updating image info" << std::endl;
+        std:: cout << "Images size: " << images.size() << std::endl;
         descriptorSet.updateImageInfo(
             1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             images[0]->getVkImageView(), textureSampler);
+            std::cout << "Updated image info" << std::endl;
     }
-
+    std::cout << "Updated descriptor set" << std::endl;
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
 
@@ -146,7 +152,6 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     pipelineLayoutInfo.setLayoutCount = 1;
     auto layout = descriptorLayout.getLayout();
     pipelineLayoutInfo.pSetLayouts = &layout;
-
     if (vkCreatePipelineLayout(*device->getDevice(), &pipelineLayoutInfo,
                                nullptr, &pipelineLayout) != VK_SUCCESS) {
         throw std::runtime_error("failed to create pipeline layout!");
@@ -176,13 +181,12 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = VK_NULL_HANDLE;
     pipelineInfo.subpass = 0;
-
+    std::cout << "Creating pipeline1" << std::endl;
     if (vkCreateGraphicsPipelines(*device->getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineInfo, nullptr,
                                   &graphicsPipeline) != VK_SUCCESS) {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
-
     // Cleanup shader modules
     vkDestroyShaderModule(*device->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(*device->getDevice(), vertShaderModule, nullptr);
@@ -191,9 +195,11 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
 
 void Pipeline::createTextureResources() {
     // TODO multiple images
-    images[0]->createTextureImage("../images/dingus.jpg");
+    images[0]->createTextureImage("images/dingus.jpg");
     images[0]->createTextureImageView();
     createTextureSampler();
+    std::cout << "Images size"<<images.size() << std::endl;    
+
 }
 
 void Pipeline::createTextureSampler() {

@@ -1,5 +1,6 @@
 #include "DescriptorSet.h"
 #include <stdexcept>
+#include <iostream>
 
 void DescriptorSet::init(VkDevice device, const DescriptorPool &pool,
                          const DescriptorLayout &layout, uint32_t count) {
@@ -43,6 +44,7 @@ void DescriptorSet::updateBufferInfo(uint32_t binding, VkBuffer buffer,
 
 void DescriptorSet::updateImageInfo(uint32_t binding, VkImageLayout layout,
                                     VkImageView view, VkSampler sampler) {
+    std::cout << "Updating image info" << std::endl;
     VkDescriptorImageInfo imageInfo{};
     imageInfo.imageLayout = layout;
     imageInfo.imageView = view;

@@ -144,23 +144,21 @@ void Image::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, ui
     device.getGraphicsCommandPool()->endSingleTimeCommands(commandBuffer);
 }
 
-void Image::createTextureImage(const std::string &texturePath)
-{
+void Image::createTextureImage(const std::string &texturePath) {
     int texWidth, texHeight, texChannels;
     stbi_uc *pixels = stbi_load(texturePath.c_str(), &texWidth, &texHeight,
                                 &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
 
-    if (!pixels)
-    {
+    if (!pixels) {
         throw std::runtime_error("failed to load texture image!");
     }
+
     Buffer stagingBuffer(
         &device, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        VMA_MEMORY_USAGE_AUTO,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VMA_MEMORY_USAGE_CPU_ONLY,
+        VMA_ALLOCATION_CREATE_MAPPED_BIT);
 
     void *data;
     stagingBuffer.map(&data);
@@ -168,18 +166,26 @@ void Image::createTextureImage(const std::string &texturePath)
     stagingBuffer.unmap();
 
     stbi_image_free(pixels);
+
     createImage(
         texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL,
         VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, image,
         VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
         VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
+
+    transitionImageLayout(image, VK_FORMAT_R8G8B8A8_SRGB,
+                                  VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
     stagingBuffer.copyToImage(image, static_cast<uint32_t>(texWidth),
                               static_cast<uint32_t>(texHeight));
+
     transitionImageLayout(image, VK_FORMAT_R8G8B8A8_SRGB,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 }
+
 
 void Image::createTextureImageView()
 {

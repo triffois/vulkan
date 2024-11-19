@@ -29,7 +29,8 @@ public:
     void createTextureImageView();
 
     VkImage getVkImage() const { return image; };
-    VkImageView getVkImageView() const { return imageView; };
+    VkImageView getVkImageView() const {std::cout << "getVkImageView" << std::endl;
+     return imageView; };
 
 private:
     Device &device;
