@@ -29,13 +29,6 @@ class Image : public INeedCleanUp {
                          VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
     VkImageView createImageView(VkFormat format,
                                 VkImageAspectFlags aspectFlags);
-    DeviceMemoryAllocationHandle
-    createImageOut(uint32_t width, uint32_t height, VkFormat format,
-                   VkImageTiling tiling, VkImageUsageFlags usage,
-                   VkMemoryPropertyFlags properties, VkImage &image,
-                   VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
-                   VmaAllocationCreateFlagBits allocFlagBits =
-                       VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
 
     void transitionImageLayout(VkFormat format, VkImageLayout oldLayout,
                                VkImageLayout newLayout);
