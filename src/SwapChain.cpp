@@ -4,7 +4,8 @@
 #include <stdexcept>
 
 SwapChain::SwapChain(Device *device, AppWindow *appWindow)
-    : device(device), appWindow(appWindow), image(Image(*device)) {
+    : device(device), appWindow(appWindow), image(Image(*device)),
+      depthImage(Image(*device)) {
     init();
 }
 
@@ -31,7 +32,16 @@ void SwapChain::cleanup() {
 }
 
 void SwapChain::recreate() {
-    cleanup();
+    for (auto imageView : swapChainImageViews) {
+        vkDestroyImageView(*device->getDevice(), imageView, nullptr);
+    }
+    swapChainImageViews.clear();
+
+    if (swapChain != VK_NULL_HANDLE) {
+        vkDestroySwapchainKHR(*device->getDevice(), swapChain, nullptr);
+        swapChain = VK_NULL_HANDLE;
+    }
+
     init();
 }
 
@@ -161,15 +171,14 @@ SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
 void SwapChain::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImage = std::make_unique<Image>(*device);
-    depthImage->createImage(swapChainExtent.width, swapChainExtent.height,
-                            depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    depthImage->createImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImage.createImage(swapChainExtent.width, swapChainExtent.height,
+                           depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImage.createImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-void SwapChain::cleanupDepthResources() { depthImage.reset(); }
+void SwapChain::cleanupDepthResources() { depthImage.cleanUp(); }
 
 VkFormat SwapChain::findDepthFormat() const {
     return findSupportedFormat({VK_FORMAT_D32_SFLOAT,
@@ -246,7 +255,7 @@ void SwapChain::transitionDepthImageLayout(VkImageLayout fromLayout,
     imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageBarrier.oldLayout = fromLayout;
     imageBarrier.newLayout = toLayout;
-    imageBarrier.image = depthImage->getVkImage();
+    imageBarrier.image = depthImage.getVkImage();
     imageBarrier.subresourceRange = {
         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
         .baseMipLevel = 0,
@@ -271,7 +280,7 @@ void SwapChain::transitionDepthImageLayout(VkImageLayout fromLayout,
 }
 
 VkImageView SwapChain::getDepthImageView() const {
-    return depthImage->getVkImageView();
+    return depthImage.getVkImageView();
 }
 
-VkImage SwapChain::getDepthImage() const { return depthImage->getVkImage(); }
+VkImage SwapChain::getDepthImage() const { return depthImage.getVkImage(); }

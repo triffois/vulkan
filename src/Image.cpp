@@ -4,11 +4,13 @@
 #include "Device.h"
 #include "stb_image.h"
 
-void Image::cleanUp(const AppContext &context) {
+void Image::cleanUp() {
     vmaUnmapMemory(allocator, imageAllocation);
     vmaDestroyImage(allocator, image, imageAllocation);
     vkDestroyImageView(*device.getDevice(), imageView, nullptr);
 }
+
+void Image::cleanUp(const AppContext &context) { cleanUp(); }
 
 void Image::createImage(uint32_t width, uint32_t height, VkFormat format,
                         VkImageTiling tiling, VkImageUsageFlags usage,

@@ -19,6 +19,7 @@ class Image : public INeedCleanUp {
     Image &operator=(const Image &) = delete;
     Image &operator=(Image &&) = delete;
 
+    void cleanUp();
     void cleanUp(const AppContext &context) override;
     void createImage(uint32_t width, uint32_t height, VkFormat format,
                      VkImageTiling tiling, VkImageUsageFlags usage,

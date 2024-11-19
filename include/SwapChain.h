@@ -3,7 +3,6 @@
 #include "AppWindow.h"
 #include "Device.h"
 #include "Image.h"
-#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -69,7 +68,6 @@ class SwapChain {
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    std::unique_ptr<Image> depthImage;
-    VkImageView depthImageView;
     Image image;
+    Image depthImage;
 };
