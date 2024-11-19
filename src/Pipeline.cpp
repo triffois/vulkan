@@ -1,7 +1,6 @@
 #include "Pipeline.h"
 #include "Buffer.h"
 #include <GLFW/glfw3.h>
-#include <chrono>
 #include <cstring>
 #include <fstream>
 #include <memory>
@@ -29,14 +28,10 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     createVertexBuffer();
     createIndexBuffer();
     createTextureResources();
-    std::cout << "Images size after texture resources: " << images.size()
-              << std::endl;
-    std::cout << "Created texture resources" << std::endl;
     descriptorLayout.init(*device->getDevice());
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
                        maxFramesInFlight);
-    std::cout << "Created descriptor set" << std::endl;
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
@@ -45,14 +40,10 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
         // TODO make this work with multiple images
-        std::cout << "Updating image info" << std::endl;
-        std::cout << "Images size: " << images.size() << std::endl;
         descriptorSet.updateImageInfo(
             1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
             images[0]->getVkImageView(), textureSampler);
-        std::cout << "Updated image info" << std::endl;
     }
-    std::cout << "Updated descriptor set" << std::endl;
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
 
@@ -189,7 +180,6 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     pipelineInfo.layout = pipelineLayout;
     pipelineInfo.renderPass = VK_NULL_HANDLE;
     pipelineInfo.subpass = 0;
-    std::cout << "Creating pipeline1" << std::endl;
     if (vkCreateGraphicsPipelines(*device->getDevice(), VK_NULL_HANDLE, 1,
                                   &pipelineInfo, nullptr,
                                   &graphicsPipeline) != VK_SUCCESS) {
@@ -198,7 +188,6 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     // Cleanup shader modules
     vkDestroyShaderModule(*device->getDevice(), fragShaderModule, nullptr);
     vkDestroyShaderModule(*device->getDevice(), vertShaderModule, nullptr);
-    std::cout << "Pipeline created constr" << std::endl;
 }
 
 void Pipeline::createTextureResources() {
@@ -296,7 +285,7 @@ VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code) {
 void Pipeline::updateUniformBuffer(uint32_t currentFrame, Camera &camera,
                                    const VkExtent2D &swapChainExtent) const {
     UniformBufferObject ubo{};
-    ubo.model = calculateModelMatrix();
+    ubo.model = modelMatrix;
     ubo.view = camera.GetViewMatrix();
     ubo.proj = glm::perspective(
         glm::radians(camera.getZoom()),
@@ -304,21 +293,6 @@ void Pipeline::updateUniformBuffer(uint32_t currentFrame, Camera &camera,
     ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
-}
-
-glm::mat4 Pipeline::calculateModelMatrix() const {
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(
-                     currentTime - startTime)
-                     .count();
-
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::rotate(model, time * glm::radians(45.0f),
-                        glm::vec3(0.0f, 0.0f, 1.0f));
-
-    // TODO: make this not hard-coded, but instead per-pipeline injectable
-    return model;
 }
 
 std::vector<char> Pipeline::readFile(const std::string &filename) {
