@@ -3,18 +3,16 @@
 #include "Camera.h"
 #include "Device.h"
 #include "Pipeline.h"
+#include "SwapChain.h"
 #include <vulkan/vulkan.h>
 
 class Render {
   public:
-    Render(Device *device, VkSwapchainKHR swapChain,
-           std::vector<VkImage> &swapChainImages,
-           std::vector<VkImageView> &swapChainImageViews,
-           VkImageView depthAttachment, VkCommandBuffer commandBuffer,
+    Render(Device *device, SwapChain *swapChain, VkCommandBuffer commandBuffer,
            uint32_t imageIndex, uint32_t currentFrame,
            VkSemaphore imageAvailableSemaphore,
            VkSemaphore renderFinishedSemaphore, VkFence inFlightFence,
-           VkExtent2D swapChainExtent, Camera &camera);
+           Camera &camera);
     ~Render() = default;
 
     // Prevent copying
@@ -22,23 +20,20 @@ class Render {
     Render &operator=(const Render &) = delete;
 
     void submit(const Pipeline &pipeline);
-    bool finish(); // Returns true if swapchain needs recreation
+    bool finish();
 
   private:
     Device *device;
-    VkSwapchainKHR swapChain;
+    SwapChain *swapChain;
     VkCommandBuffer commandBuffer;
     uint32_t imageIndex;
     uint32_t currentFrame;
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
-    VkExtent2D swapChainExtent;
     Camera &camera;
     bool isFinished = false;
-    std::vector<VkImage> &swapChainImages;
 
     void recordRenderingCommands(const Pipeline &pipeline);
     void submitCommandBuffer();
-    bool presentFrame();
 };

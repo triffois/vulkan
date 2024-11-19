@@ -17,9 +17,9 @@
 #include "CommandBuffer.h"
 #include "Device.h"
 #include "EnginePeripherals.h"
-#include "Image.h"
 #include "Pipeline.h"
 #include "Render.h"
+#include "SwapChain.h"
 
 class Engine {
   public:
@@ -44,23 +44,13 @@ class Engine {
     AppWindow appWindow;
     Device appDevice;
     VkDevice device;
-    Image image = Image(appDevice);
+    std::unique_ptr<SwapChain> swapChain;
     std::vector<Pipeline> pipelines;
 
     EnginePeripheralsManager peripheralsManager;
     Camera mainCamera{0, 0, 2, 0, 1, 0, 90, 0};
 
-    VkSwapchainKHR swapChain;
-    std::vector<VkImage> swapChainImages;
-    VkFormat swapChainImageFormat;
-    VkExtent2D swapChainExtent;
-    std::vector<VkImageView> swapChainImageViews;
-
     VkCommandPool commandPool;
-
-    VkImage depthImage;
-    VkImageView depthImageView;
-    DeviceMemoryAllocationHandle depthImageAllocation;
 
     std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
 
@@ -102,8 +92,6 @@ class Engine {
 
     void mainLoop();
 
-    void cleanupSwapChain();
-
     void cleanup();
 
     void recreateSwapChain();
@@ -114,29 +102,7 @@ class Engine {
 
     void createCommandPool();
 
-    void createDepthResources();
-
-    VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates,
-                                 VkImageTiling tiling,
-                                 VkFormatFeatureFlags features);
-
-    VkFormat findDepthFormat();
-
-    bool hasStencilComponent(VkFormat format);
-
     void createCommandBuffers();
-
-    void transitionDepthImageLayout(VkImageLayout fromLayout,
-                                    VkImageLayout toLayout, VkImage &depthImage,
-                                    VkCommandBuffer &bufferToRecordOn);
-
-    void transitionSwapchainImageLayout(VkImageLayout fromLayout,
-                                        VkImageLayout toLayout,
-                                        uint32_t swapchainIdx,
-                                        VkCommandBuffer &bufferToRecordOn);
-
-    void recordCommandBuffer(VkCommandBuffer commandBuffer,
-                             uint32_t imageIndex);
 
     void createSyncObjects();
 
