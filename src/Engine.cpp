@@ -71,27 +71,37 @@ Camera *Engine::getCamera() { return &mainCamera; }
 void Engine::processKeyboardInput() {
     auto window = appWindow.getWindow();
 
+    // Speed multiplier when holding Ctrl
+    float speedMultiplier =
+        (glfwGetKey(window, GLFW_KEY_LEFT_CONTROL) == GLFW_PRESS) ? 25.0f
+                                                                  : 1.0f;
+
     // Horizontal movement (WASD)
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS) {
-        mainCamera.ProcessKeyboard(Camera_Movement::FORWARD, Time::deltaTime());
+        mainCamera.ProcessKeyboard(Camera_Movement::FORWARD, Time::deltaTime(),
+                                   speedMultiplier);
     }
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        mainCamera.ProcessKeyboard(Camera_Movement::BACKWARD,
-                                   Time::deltaTime());
+        mainCamera.ProcessKeyboard(Camera_Movement::BACKWARD, Time::deltaTime(),
+                                   speedMultiplier);
     }
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        mainCamera.ProcessKeyboard(Camera_Movement::LEFT, Time::deltaTime());
+        mainCamera.ProcessKeyboard(Camera_Movement::LEFT, Time::deltaTime(),
+                                   speedMultiplier);
     }
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        mainCamera.ProcessKeyboard(Camera_Movement::RIGHT, Time::deltaTime());
+        mainCamera.ProcessKeyboard(Camera_Movement::RIGHT, Time::deltaTime(),
+                                   speedMultiplier);
     }
 
     // Vertical movement (Space/Shift)
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS) {
-        mainCamera.ProcessKeyboard(Camera_Movement::UP, Time::deltaTime());
+        mainCamera.ProcessKeyboard(Camera_Movement::UP, Time::deltaTime(),
+                                   speedMultiplier);
     }
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS) {
-        mainCamera.ProcessKeyboard(Camera_Movement::DOWN, Time::deltaTime());
+        mainCamera.ProcessKeyboard(Camera_Movement::DOWN, Time::deltaTime(),
+                                   speedMultiplier);
     }
 }
 

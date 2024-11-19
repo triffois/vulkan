@@ -289,7 +289,7 @@ void Pipeline::updateUniformBuffer(uint32_t currentFrame, Camera &camera,
     ubo.view = camera.GetViewMatrix();
     ubo.proj = glm::perspective(
         glm::radians(camera.getZoom()),
-        swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 10.0f);
+        swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
     ubo.proj[1][1] *= -1;
 
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));

@@ -48,8 +48,9 @@ class Camera {
         return glm::lookAt(Position, Position + Front, Up);
     }
 
-    void ProcessKeyboard(Camera_Movement direction, double deltaTime) {
-        float velocity = MovementSpeed * deltaTime;
+    void ProcessKeyboard(Camera_Movement direction, double deltaTime,
+                         float speedMultiplier = 1.0f) {
+        float velocity = MovementSpeed * deltaTime * speedMultiplier;
         glm::vec3 horizontalFront =
             glm::normalize(glm::vec3(Front.x, 0.0f, Front.z));
         glm::vec3 horizontalRight =
