@@ -26,6 +26,11 @@ class Buffer {
     void map(void **data);
     void unmap();
 
+    void recordCopyTo(VkCommandBuffer cmdBuffer, Buffer &dstBuffer,
+                      VkDeviceSize size) const;
+    void recordCopyToImage(VkCommandBuffer cmdBuffer, VkImage image,
+                           uint32_t width, uint32_t height) const;
+
   private:
     Device *device;
     VkBuffer buffer;

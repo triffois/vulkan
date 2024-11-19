@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Buffer.h"
 #include "Pipeline.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -15,6 +14,7 @@
 #include "AppInstance.h"
 #include "AppWindow.h"
 #include "Camera.h"
+#include "CommandBuffer.h"
 #include "Device.h"
 #include "EnginePeripherals.h"
 #include "Image.h"
@@ -56,7 +56,7 @@ class Engine {
     VkImageView depthImageView;
     DeviceMemoryAllocationHandle depthImageAllocation;
 
-    std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
     std::vector<VkSemaphore> renderFinishedSemaphores;

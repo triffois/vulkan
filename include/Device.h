@@ -1,4 +1,3 @@
-
 #pragma once
 
 #include <list>
@@ -13,11 +12,10 @@
 
 struct DeviceMemoryAllocationHandle;
 
-class Device : public INeedCleanUp
-{
+class Device : public INeedCleanUp {
     friend struct DeviceMemoryAllocationHandle;
 
-public:
+  public:
     void init(const AppWindow *appWindow, const AppInstance *appInstance);
 
     Device() = default;
@@ -68,7 +66,7 @@ public:
     VkResult unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const;
     CommandPool *getGraphicsCommandPool() { return graphicsCommandPool; }
 
-private:
+  private:
     struct DeviceMemoryAllocation;
 
     void pickPhysicalDevice();
@@ -82,7 +80,7 @@ private:
     SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
     void freeAllocation(DeviceMemoryAllocation *allocationToFree);
 
-private:
+  private:
     VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
     VkDevice device;
     VkQueue graphicsQueue;
@@ -94,13 +92,11 @@ private:
 
     CommandPool *graphicsCommandPool;
 
-    struct DeviceMemoryAllocation
-    {
+    struct DeviceMemoryAllocation {
         std::variant<VkBuffer, VkImage> allocatedObject{};
         VmaAllocation allocation{};
 
-        bool operator==(const DeviceMemoryAllocation &other) const
-        {
+        bool operator==(const DeviceMemoryAllocation &other) const {
             if (allocatedObject.index() != other.allocatedObject.index())
                 return false;
 
@@ -116,8 +112,7 @@ private:
             return false;
         }
 
-        bool operator!=(const DeviceMemoryAllocation &other) const
-        {
+        bool operator!=(const DeviceMemoryAllocation &other) const {
             return !operator==(other);
         }
     };
@@ -125,10 +120,9 @@ private:
     std::list<DeviceMemoryAllocation> allocations;
 };
 
-struct DeviceMemoryAllocationHandle
-{
+struct DeviceMemoryAllocationHandle {
     friend class Device;
 
-private:
+  private:
     Device::DeviceMemoryAllocation *allocationInfo{};
 };

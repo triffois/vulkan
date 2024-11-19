@@ -1,4 +1,5 @@
 #include "Buffer.h"
+#include "CommandBuffer.h"
 #include <stdexcept>
 
 Buffer::Buffer(Device *device, VkDeviceSize size, VkBufferUsageFlags usage,
@@ -43,30 +44,14 @@ Buffer::~Buffer() {
     }
 }
 
-void Buffer::copyFrom(Buffer &srcBuffer, VkDeviceSize size) {
-    VkCommandBuffer commandBuffer =
-        device->getGraphicsCommandPool()->beginSingleTimeCommands();
-
+void Buffer::recordCopyTo(VkCommandBuffer cmdBuffer, Buffer& dstBuffer, VkDeviceSize size) const {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
-    vkCmdCopyBuffer(commandBuffer, srcBuffer.getBuffer(), buffer, 1,
-                    &copyRegion);
-
-    device->getGraphicsCommandPool()->endSingleTimeCommands(commandBuffer);
+    vkCmdCopyBuffer(cmdBuffer, buffer, dstBuffer.getBuffer(), 1, &copyRegion);
 }
 
-void Buffer::map(void **data) {
-    if (device->mapMemory(&allocation, data) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to map buffer memory");
-    }
-}
-
-void Buffer::unmap() { device->unmapMemory(&allocation); }
-
-void Buffer::copyToImage(VkImage image, uint32_t width, uint32_t height) {
-    VkCommandBuffer commandBuffer =
-        device->getGraphicsCommandPool()->beginSingleTimeCommands();
-
+void Buffer::recordCopyToImage(VkCommandBuffer cmdBuffer, VkImage image, 
+                             uint32_t width, uint32_t height) const {
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
@@ -78,8 +63,30 @@ void Buffer::copyToImage(VkImage image, uint32_t width, uint32_t height) {
     region.imageOffset = {0, 0, 0};
     region.imageExtent = {width, height, 1};
 
-    vkCmdCopyBufferToImage(commandBuffer, getBuffer(), image,
-                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    vkCmdCopyBufferToImage(cmdBuffer, buffer, image,
+                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+}
 
-    device->getGraphicsCommandPool()->endSingleTimeCommands(commandBuffer);
+void Buffer::copyFrom(Buffer& srcBuffer, VkDeviceSize size) {
+    CommandBuffer cmd(device, device->getGraphicsCommandPool());
+    cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    srcBuffer.recordCopyTo(cmd.getCommandBuffer(), *this, size);
+    cmd.end();
+    cmd.submit(VK_NULL_HANDLE, true);
+}
+
+void Buffer::map(void **data) {
+    if (device->mapMemory(&allocation, data) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to map buffer memory");
+    }
+}
+
+void Buffer::unmap() { device->unmapMemory(&allocation); }
+
+void Buffer::copyToImage(VkImage image, uint32_t width, uint32_t height) {
+    CommandBuffer cmd(device, device->getGraphicsCommandPool());
+    cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    recordCopyToImage(cmd.getCommandBuffer(), image, width, height);
+    cmd.end();
+    cmd.submit(VK_NULL_HANDLE, true);
 }

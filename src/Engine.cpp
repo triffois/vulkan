@@ -282,8 +282,11 @@ bool Engine::hasStencilComponent(VkFormat format) {
 }
 
 void Engine::createCommandBuffers() {
-    commandBuffers = appDevice.getGraphicsCommandPool()->allocateCommandBuffers(
-        MAX_FRAMES_IN_FLIGHT);
+    commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+        commandBuffers[i] = std::make_unique<CommandBuffer>(
+            &appDevice, appDevice.getGraphicsCommandPool());
+    }
 }
 
 void Engine::transitionDepthImageLayout(VkImageLayout fromLayout,
@@ -354,99 +357,6 @@ void Engine::transitionSwapchainImageLayout(VkImageLayout fromLayout,
                          nullptr, 1, &imageBarrier);
 }
 
-void Engine::recordCommandBuffer(VkCommandBuffer commandBuffer,
-                                 uint32_t imageIndex) {
-    VkCommandBufferBeginInfo beginInfo{};
-    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-
-    if (vkBeginCommandBuffer(commandBuffer, &beginInfo) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to begin recording command buffer!");
-    }
-
-    VkRenderingAttachmentInfoKHR colorAttachment{};
-    colorAttachment.pNext = nullptr;
-    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    colorAttachment.clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
-    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachment.imageView = swapChainImageViews[imageIndex];
-    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
-
-    VkRenderingAttachmentInfoKHR depthAttachment{};
-    depthAttachment.pNext = nullptr;
-    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
-    depthAttachment.clearValue.depthStencil = {1.0f, 0};
-    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-    depthAttachment.storeOp =
-        VK_ATTACHMENT_STORE_OP_STORE; // Enable depth tests
-    depthAttachment.imageView = depthImageView;
-    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
-
-    VkRenderingInfoKHR renderingInfo{};
-    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
-    renderingInfo.colorAttachmentCount = 1;
-    renderingInfo.pColorAttachments = &colorAttachment;
-    renderingInfo.pDepthAttachment = &depthAttachment;
-    renderingInfo.viewMask = 0;
-    renderingInfo.layerCount = 1;
-    renderingInfo.flags = 0;
-    renderingInfo.pNext = nullptr;
-    renderingInfo.renderArea.offset = {0, 0};
-    renderingInfo.renderArea.extent = swapChainExtent;
-
-    transitionSwapchainImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   imageIndex, commandBuffer);
-    transitionDepthImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                               depthImage, commandBuffer);
-
-    vkCmdBeginRendering(commandBuffer, &renderingInfo);
-
-    for (const auto &pipeline : pipelines) {
-        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          pipeline.getPipeline());
-        pipeline.updateUniformBuffer(currentFrame, mainCamera, swapChainExtent);
-
-        VkViewport viewport{};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)swapChainExtent.width;
-        viewport.height = (float)swapChainExtent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
-
-        VkRect2D scissor{};
-        scissor.offset = {0, 0};
-        scissor.extent = swapChainExtent;
-        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
-
-        VkBuffer vertexBuffers[] = {pipeline.getVertexBuffer()};
-        VkDeviceSize offsets[] = {0};
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-
-        vkCmdBindIndexBuffer(commandBuffer, pipeline.getIndexBuffer(), 0,
-                             VK_INDEX_TYPE_UINT16);
-
-        auto currentDescriptorSet = pipeline.getDescriptorSet(currentFrame);
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                pipeline.getLayout(), 0, 1,
-                                &currentDescriptorSet, 0, nullptr);
-
-        vkCmdDrawIndexed(commandBuffer, pipeline.getIndexCount(), 1, 0, 0, 0);
-    }
-
-    vkCmdEndRendering(commandBuffer);
-    transitionSwapchainImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, imageIndex,
-                                   commandBuffer);
-
-    if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("failed to record command buffer!");
-    }
-}
-
 void Engine::createSyncObjects() {
     imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
     renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
@@ -489,11 +399,93 @@ void Engine::drawFrame() {
     }
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
-    vkResetCommandBuffer(commandBuffers[currentFrame],
-                         /*VkCommandBufferResetFlagBits*/ 0);
 
-    recordCommandBuffer(commandBuffers[currentFrame], imageIndex);
+    // Reset and record command buffer using the wrapper
+    commandBuffers[currentFrame]->reset();
+    commandBuffers[currentFrame]->begin(
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 
+    // Get the underlying VkCommandBuffer for the current recording
+    VkCommandBuffer currentCmdBuffer =
+        commandBuffers[currentFrame]->getCommandBuffer();
+
+    // Record commands
+    VkRenderingAttachmentInfoKHR colorAttachment{};
+    colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+    colorAttachment.clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
+    colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    colorAttachment.imageView = swapChainImageViews[imageIndex];
+    colorAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+
+    VkRenderingAttachmentInfoKHR depthAttachment{};
+    depthAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR;
+    depthAttachment.clearValue.depthStencil = {1.0f, 0};
+    depthAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+    depthAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    depthAttachment.imageView = depthImageView;
+    depthAttachment.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
+
+    VkRenderingInfoKHR renderingInfo{};
+    renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO_KHR;
+    renderingInfo.colorAttachmentCount = 1;
+    renderingInfo.pColorAttachments = &colorAttachment;
+    renderingInfo.pDepthAttachment = &depthAttachment;
+    renderingInfo.layerCount = 1;
+    renderingInfo.renderArea.offset = {0, 0};
+    renderingInfo.renderArea.extent = swapChainExtent;
+
+    transitionSwapchainImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   imageIndex, currentCmdBuffer);
+    transitionDepthImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                               depthImage, currentCmdBuffer);
+
+    vkCmdBeginRendering(currentCmdBuffer, &renderingInfo);
+
+    for (const auto &pipeline : pipelines) {
+        vkCmdBindPipeline(currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          pipeline.getPipeline());
+        pipeline.updateUniformBuffer(currentFrame, mainCamera, swapChainExtent);
+
+        VkViewport viewport{};
+        viewport.x = 0.0f;
+        viewport.y = 0.0f;
+        viewport.width = static_cast<float>(swapChainExtent.width);
+        viewport.height = static_cast<float>(swapChainExtent.height);
+        viewport.minDepth = 0.0f;
+        viewport.maxDepth = 1.0f;
+        vkCmdSetViewport(currentCmdBuffer, 0, 1, &viewport);
+
+        VkRect2D scissor{};
+        scissor.offset = {0, 0};
+        scissor.extent = swapChainExtent;
+        vkCmdSetScissor(currentCmdBuffer, 0, 1, &scissor);
+
+        VkBuffer vertexBuffers[] = {pipeline.getVertexBuffer()};
+        VkDeviceSize offsets[] = {0};
+        vkCmdBindVertexBuffers(currentCmdBuffer, 0, 1, vertexBuffers, offsets);
+        vkCmdBindIndexBuffer(currentCmdBuffer, pipeline.getIndexBuffer(), 0,
+                             VK_INDEX_TYPE_UINT16);
+
+        auto currentDescriptorSet = pipeline.getDescriptorSet(currentFrame);
+        vkCmdBindDescriptorSets(
+            currentCmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+            pipeline.getLayout(), 0, 1, &currentDescriptorSet, 0, nullptr);
+
+        vkCmdDrawIndexed(currentCmdBuffer, pipeline.getIndexCount(), 1, 0, 0,
+                         0);
+    }
+
+    vkCmdEndRendering(currentCmdBuffer);
+    transitionSwapchainImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, imageIndex,
+                                   currentCmdBuffer);
+
+    commandBuffers[currentFrame]->end();
+
+    // Submit command buffer
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -503,37 +495,28 @@ void Engine::drawFrame() {
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
-
     submitInfo.commandBufferCount = 1;
-    submitInfo.pCommandBuffers = &commandBuffers[currentFrame];
+    submitInfo.pCommandBuffers = &currentCmdBuffer;
 
     VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
-
-    // if (vkQueueSubmit(graphicsQueue, 1, &submitInfo,
-    // inFlightFences[currentFrame]) != VK_SUCCESS) {
-    //     throw std::runtime_error("failed to submit draw command buffer!");
-    // }
 
     if (appDevice.submitToAvailableGraphicsQueue(
             &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
         throw std::runtime_error("failed to submit draw command buffer!");
     }
 
+    // Present
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = signalSemaphores;
-
     VkSwapchainKHR swapChains[] = {swapChain};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
-
     presentInfo.pImageIndices = &imageIndex;
 
-    // result = vkQueuePresentKHR(presentQueue, &presentInfo);
     result = appDevice.submitToAvailablePresentQueue(&presentInfo);
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
