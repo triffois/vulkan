@@ -6,9 +6,15 @@
 #include "Model.h"
 #include "ModelLoader.h"
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        std::cerr << "Usage: " << argv[0] << " <path_to_gltf_file>"
+                  << std::endl;
+        return EXIT_FAILURE;
+    }
+
     Engine engine;
-    std::vector<Model> models = ModelLoader::loadFromGLTF("assets/dingus.glb");
+    std::vector<Model> models = ModelLoader::loadFromGLTF(argv[1]);
 
     // Create pipeline(s) outside the engine
     std::vector<Pipeline> pipelines;
