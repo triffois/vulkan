@@ -3,6 +3,7 @@
 #include "AppWindow.h"
 #include "Device.h"
 #include "Image.h"
+#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -24,8 +25,8 @@ class SwapChain {
         return swapChainImageViews[index];
     }
     VkImage getImage(size_t index) const { return swapChainImages[index]; }
-    VkImageView getDepthImageView() const { return depthImageView; }
-    VkImage getDepthImage() const { return depthImage; }
+    VkImageView getDepthImageView() const;
+    VkImage getDepthImage() const;
     VkFormat findDepthFormat() const;
 
     void recreate();
@@ -68,8 +69,7 @@ class SwapChain {
     VkFormat swapChainImageFormat;
     VkExtent2D swapChainExtent;
 
-    VkImage depthImage;
+    std::unique_ptr<Image> depthImage;
     VkImageView depthImageView;
-    DeviceMemoryAllocationHandle depthImageAllocation;
     Image image;
 };

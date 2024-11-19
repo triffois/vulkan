@@ -161,23 +161,15 @@ SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
 void SwapChain::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImageAllocation = image.createImageOut(
-        swapChainExtent.width, swapChainExtent.height, depthFormat,
-        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage,
-        VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE,
-        VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT);
-    depthImageView = device->createImageView(depthImage, depthFormat,
-                                             VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImage = std::make_unique<Image>(*device);
+    depthImage->createImage(swapChainExtent.width, swapChainExtent.height,
+                            depthFormat, VK_IMAGE_TILING_OPTIMAL,
+                            VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    depthImage->createImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 }
 
-void SwapChain::cleanupDepthResources() {
-    if (depthImageView != VK_NULL_HANDLE) {
-        vkDestroyImageView(*device->getDevice(), depthImageView, nullptr);
-        device->freeAllocationMemoryOnDemand(&depthImageAllocation);
-        depthImageView = VK_NULL_HANDLE;
-    }
-}
+void SwapChain::cleanupDepthResources() { depthImage.reset(); }
 
 VkFormat SwapChain::findDepthFormat() const {
     return findSupportedFormat({VK_FORMAT_D32_SFLOAT,
@@ -254,7 +246,7 @@ void SwapChain::transitionDepthImageLayout(VkImageLayout fromLayout,
     imageBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
     imageBarrier.oldLayout = fromLayout;
     imageBarrier.newLayout = toLayout;
-    imageBarrier.image = depthImage;
+    imageBarrier.image = depthImage->getVkImage();
     imageBarrier.subresourceRange = {
         .aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
         .baseMipLevel = 0,
@@ -277,3 +269,9 @@ void SwapChain::transitionDepthImageLayout(VkImageLayout fromLayout,
     vkCmdPipelineBarrier(bufferToRecordOn, srcMask, dstMask, 0, 0, nullptr, 0,
                          nullptr, 1, &imageBarrier);
 }
+
+VkImageView SwapChain::getDepthImageView() const {
+    return depthImage->getVkImageView();
+}
+
+VkImage SwapChain::getDepthImage() const { return depthImage->getVkImage(); }
