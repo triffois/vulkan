@@ -20,6 +20,8 @@ class Pipeline {
              VkFormat depthFormat, const Model &model,
              uint32_t maxFramesInFlight);
 
+    // TODO think about how to handle copying
+
     void cleanup();
     void updateUniformBuffer(uint32_t currentFrame, Camera &camera,
                              const VkExtent2D &swapChainExtent) const;

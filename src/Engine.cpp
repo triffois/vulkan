@@ -1,5 +1,4 @@
 #include "Engine.h"
-#include "Render.h"
 #include <algorithm>
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -7,7 +6,65 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 Engine::Engine() : mainCamera(glm::vec3(0.0f, 0.0f, 3.0f)) { initVulkan(); }
 Engine::~Engine() { cleanup(); }
 
-void Engine::run() { mainLoop(); }
+bool Engine::running() const {
+    return isRunning && !glfwWindowShouldClose(appWindow.getWindow());
+}
+
+Render Engine::startRender() {
+    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
+                    UINT64_MAX);
+
+    uint32_t imageIndex;
+    VkResult result = vkAcquireNextImageKHR(
+        device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
+        VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        recreateSwapChain();
+        return startRender(); // Retry with new swapchain
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+        throw std::runtime_error("Failed to acquire swap chain image!");
+    }
+
+    vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
+    commandBuffers[currentFrame]->reset();
+    commandBuffers[currentFrame]->begin(
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    VkCommandBuffer currentCmdBuffer =
+        commandBuffers[currentFrame]->getCommandBuffer();
+
+    // Transition image layouts
+    transitionSwapchainImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                   imageIndex, currentCmdBuffer);
+    transitionDepthImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                               depthImage, currentCmdBuffer);
+
+    processEvents();
+    peripheralsManager.updatePeripheralsOnFrame();
+    processKeyboardInput();
+
+    return Render(&appDevice, swapChain, swapChainImages, swapChainImageViews,
+                  depthImageView, currentCmdBuffer, imageIndex, currentFrame,
+                  imageAvailableSemaphores[currentFrame],
+                  renderFinishedSemaphores[currentFrame],
+                  inFlightFences[currentFrame], swapChainExtent, mainCamera);
+}
+
+void Engine::finishRender(Render &render) {
+    bool needsRecreation = render.finish();
+
+    if (needsRecreation || framebufferResized) {
+        framebufferResized = false;
+        recreateSwapChain();
+    }
+
+    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Engine::processEvents() { glfwPollEvents(); }
 
 Camera *Engine::getCamera() { return &mainCamera; }
 
@@ -68,28 +125,6 @@ void Engine::initVulkan() {
 
     createCommandBuffers();
     createSyncObjects();
-}
-
-void Engine::addPipeline(const std::string &vertShaderPath,
-                         const std::string &fragShaderPath,
-                         const Model &model) {
-    std::cout << "Adding pipeline" << std::endl;
-    Pipeline pipeline(&appDevice, vertShaderPath, fragShaderPath,
-                      swapChainImageFormat, findDepthFormat(), model,
-                      MAX_FRAMES_IN_FLIGHT);
-    std::cout << "Pipeline created" << std::endl;
-    pipelines.push_back(std::move(pipeline));
-}
-
-void Engine::mainLoop() {
-    while (!glfwWindowShouldClose(appWindow.getWindow())) {
-        glfwPollEvents();
-        peripheralsManager.updatePeripheralsOnFrame();
-        processKeyboardInput();
-        drawFrame();
-    }
-
-    vkDeviceWaitIdle(device);
 }
 
 void Engine::cleanupSwapChain() {
@@ -383,58 +418,6 @@ void Engine::createSyncObjects() {
     }
 }
 
-void Engine::drawFrame() {
-    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
-                    UINT64_MAX);
-
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(
-        device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
-        VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-        return;
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("Failed to acquire swap chain image!");
-    }
-
-    vkResetFences(device, 1, &inFlightFences[currentFrame]);
-
-    commandBuffers[currentFrame]->reset();
-    commandBuffers[currentFrame]->begin(
-        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-    VkCommandBuffer currentCmdBuffer =
-        commandBuffers[currentFrame]->getCommandBuffer();
-
-    // Transition image layouts
-    transitionSwapchainImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                   imageIndex, currentCmdBuffer);
-    transitionDepthImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-                               depthImage, currentCmdBuffer);
-
-    Render render(&appDevice, swapChain, swapChainImages, swapChainImageViews,
-                  depthImageView, currentCmdBuffer, imageIndex, currentFrame,
-                  imageAvailableSemaphores[currentFrame],
-                  renderFinishedSemaphores[currentFrame],
-                  inFlightFences[currentFrame], swapChainExtent, mainCamera);
-
-    for (const auto &pipeline : pipelines) {
-        render.submit(pipeline);
-    }
-
-    bool needsRecreation = render.finish();
-
-    if (needsRecreation || framebufferResized) {
-        framebufferResized = false;
-        recreateSwapChain();
-    }
-
-    currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
-}
-
 VkShaderModule Engine::createShaderModule(const std::vector<char> &code) {
     VkShaderModuleCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -494,4 +477,12 @@ Engine::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
 
         return actualExtent;
     }
+}
+
+Pipeline Engine::createPipeline(const std::string &vertShaderPath,
+                                const std::string &fragShaderPath,
+                                const Model &model) {
+    return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
+                    swapChainImageFormat, findDepthFormat(), model,
+                    MAX_FRAMES_IN_FLIGHT);
 }

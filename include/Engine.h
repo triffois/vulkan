@@ -18,6 +18,8 @@
 #include "Device.h"
 #include "EnginePeripherals.h"
 #include "Image.h"
+#include "Pipeline.h"
+#include "Render.h"
 
 class Engine {
   public:
@@ -27,11 +29,15 @@ class Engine {
     Engine(const Engine &) = delete;
     Engine &operator=(const Engine &) = delete;
 
-    void run();
-
+    bool running() const;
+    Render startRender();
+    void finishRender(Render &render);
     Camera *getCamera();
-    void addPipeline(const std::string &vertShaderPath,
-                     const std::string &fragShaderPath, const Model &model);
+
+    Device *getDevice() { return &appDevice; }
+    Pipeline createPipeline(const std::string &vertShaderPath,
+                            const std::string &fragShaderPath,
+                            const Model &model);
 
   private:
     AppInstance appInstance;
@@ -64,6 +70,7 @@ class Engine {
     uint32_t currentFrame = 0;
 
     bool framebufferResized = false;
+    bool isRunning = true;
 
     static void framebufferResizeCallback(GLFWwindow *window, int width,
                                           int height) {
@@ -144,4 +151,6 @@ class Engine {
         const std::vector<VkPresentModeKHR> &availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
+
+    void processEvents();
 };

@@ -7,19 +7,27 @@
 #include "ModelLoader.h"
 
 int main() {
-    Engine app;
-    std::cout << "Engine created" << std::endl;
-
+    Engine engine;
     std::vector<Model> models = ModelLoader::loadFromGLTF("assets/dingus.glb");
-    std::cout << "Loaded " << models.size() << " models" << std::endl;
 
+    // Create pipeline(s) outside the engine
+    std::vector<Pipeline> pipelines;
     for (const auto &model : models) {
-        app.addPipeline("shaders/vert.spv", "shaders/frag.spv", model);
+        pipelines.push_back(engine.createPipeline("shaders/vert.spv",
+                                                  "shaders/frag.spv", model));
     }
-    std::cout << "Pipeline added" << std::endl;
 
     try {
-        app.run();
+        while (engine.running()) {
+            auto render = engine.startRender();
+
+            for (const auto &pipeline : pipelines) {
+                render.submit(pipeline);
+            }
+
+            engine.finishRender(render);
+        }
+
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;
