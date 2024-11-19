@@ -39,6 +39,9 @@ class SwapChain {
                                     VkImageLayout toLayout,
                                     VkCommandBuffer &bufferToRecordOn);
 
+    uint32_t acquireNextImage(VkSemaphore imageAvailableSemaphore);
+    void handleResizing();
+
   private:
     void init();
     void createExtent();

@@ -284,3 +284,32 @@ VkImageView SwapChain::getDepthImageView() const {
 }
 
 VkImage SwapChain::getDepthImage() const { return depthImage.getVkImage(); }
+
+uint32_t SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore) {
+    uint32_t imageIndex;
+    VkResult result = vkAcquireNextImageKHR(*device->getDevice(), swapChain,
+                                            UINT64_MAX, imageAvailableSemaphore,
+                                            VK_NULL_HANDLE, &imageIndex);
+
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        handleResizing();
+        return acquireNextImage(
+            imageAvailableSemaphore); // Retry after recreation
+    } else if (result != VK_SUCCESS) {
+        throw std::runtime_error("Failed to acquire swap chain image!");
+    }
+
+    return imageIndex;
+}
+
+void SwapChain::handleResizing() {
+    int width = 0, height = 0;
+    glfwGetFramebufferSize(appWindow->getWindow(), &width, &height);
+    while (width == 0 || height == 0) {
+        glfwGetFramebufferSize(appWindow->getWindow(), &width, &height);
+        glfwWaitEvents();
+    }
+
+    vkDeviceWaitIdle(*device->getDevice());
+    recreate();
+}

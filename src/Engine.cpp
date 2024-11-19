@@ -14,17 +14,8 @@ Render Engine::startRender() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
 
-    uint32_t imageIndex;
-    VkResult result = vkAcquireNextImageKHR(
-        device, swapChain->getSwapChain(), UINT64_MAX,
-        imageAvailableSemaphores[currentFrame], VK_NULL_HANDLE, &imageIndex);
-
-    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-        recreateSwapChain();
-        return startRender();
-    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("Failed to acquire swap chain image!");
-    }
+    uint32_t imageIndex =
+        swapChain->acquireNextImage(imageAvailableSemaphores[currentFrame]);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -58,7 +49,7 @@ void Engine::finishRender(Render &render) {
 
     if (needsRecreation || framebufferResized) {
         framebufferResized = false;
-        recreateSwapChain();
+        swapChain->handleResizing();
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -122,7 +113,6 @@ void Engine::initVulkan() {
         appDevice.querySwapChainSupportCurrent();
     swapChain = std::make_unique<SwapChain>(&appDevice, &appWindow);
 
-    createCommandPool();
     createCommandBuffers();
     createSyncObjects();
 }
@@ -145,39 +135,9 @@ void Engine::cleanup() {
         vkDestroyFence(device, inFlightFences[i], nullptr);
     }
 
-    vkDestroyCommandPool(device, commandPool, nullptr);
-
     appInstance.cleanUpAll();
 
     glfwTerminate();
-}
-
-void Engine::recreateSwapChain() {
-    int width = 0, height = 0;
-    glfwGetFramebufferSize(appWindow.getWindow(), &width, &height);
-    while (width == 0 || height == 0) {
-        glfwGetFramebufferSize(appWindow.getWindow(), &width, &height);
-        glfwWaitEvents();
-    }
-
-    vkDeviceWaitIdle(device);
-
-    swapChain->recreate();
-}
-
-void Engine::createCommandPool() {
-    QueueFamilyIndices queueFamilyIndices =
-        appDevice.findQueueFamiliesCurrent();
-
-    VkCommandPoolCreateInfo poolInfo{};
-    poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-    poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
-
-    if (vkCreateCommandPool(device, &poolInfo, nullptr, &commandPool) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("Failed to create graphics command pool!");
-    }
 }
 
 void Engine::createCommandBuffers() {
@@ -211,21 +171,6 @@ void Engine::createSyncObjects() {
                 "failed to create synchronization objects for a frame!");
         }
     }
-}
-
-VkShaderModule Engine::createShaderModule(const std::vector<char> &code) {
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t *>(code.data());
-
-    VkShaderModule shaderModule;
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule) !=
-        VK_SUCCESS) {
-        throw std::runtime_error("failed to create shader module!");
-    }
-
-    return shaderModule;
 }
 
 Pipeline Engine::createPipeline(const std::string &vertShaderPath,

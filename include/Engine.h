@@ -50,8 +50,6 @@ class Engine {
     EnginePeripheralsManager peripheralsManager;
     Camera mainCamera{0, 0, 2, 0, 1, 0, 90, 0};
 
-    VkCommandPool commandPool;
-
     std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -100,15 +98,11 @@ class Engine {
 
     void createImageViews();
 
-    void createCommandPool();
-
     void createCommandBuffers();
 
     void createSyncObjects();
 
     void drawFrame();
-
-    VkShaderModule createShaderModule(const std::vector<char> &code);
 
     VkSurfaceFormatKHR chooseSwapSurfaceFormat(
         const std::vector<VkSurfaceFormatKHR> &availableFormats);
