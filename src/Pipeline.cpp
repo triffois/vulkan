@@ -27,23 +27,40 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     createUniformBuffers(maxFramesInFlight);
     createVertexBuffer();
     createIndexBuffer();
-    createTextureResources();
+
+    // Only create texture resources if we have textures
+    if (!model.getTextures().empty()) {
+        createTextureResources();
+    }
+
     descriptorLayout.init(*device->getDevice());
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
                        maxFramesInFlight);
+
+    // Always update uniform buffer descriptors
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
     }
-    for (size_t i = 0; i < maxFramesInFlight; i++) {
-        descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
-                                       sizeof(UniformBufferObject));
-        // TODO make this work with multiple images
-        descriptorSet.updateImageInfo(
-            1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-            images[0]->getVkImageView(), textureSampler);
+
+    // Only update texture descriptors if we have textures
+    if (!images.empty()) {
+        std::vector<VkImageView> imageViews;
+        std::vector<VkImageLayout> imageLayouts;
+
+        imageViews.reserve(images.size());
+        imageLayouts.reserve(images.size());
+
+        for (const auto &image : images) {
+            imageViews.push_back(image->getVkImageView());
+            imageLayouts.push_back(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        }
+
+        descriptorSet.updateImageInfos(1, imageViews, imageLayouts,
+                                       textureSampler);
     }
+
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
 

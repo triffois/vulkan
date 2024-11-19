@@ -13,6 +13,11 @@ class DescriptorSet {
     void updateBufferInfo(uint32_t binding, VkBuffer buffer,
                           VkDeviceSize offset, VkDeviceSize range);
 
+    void updateImageInfos(uint32_t startBinding,
+                          const std::vector<VkImageView> &views,
+                          const std::vector<VkImageLayout> &layouts,
+                          VkSampler sampler);
+
     void updateImageInfo(uint32_t binding, VkImageLayout layout,
                          VkImageView view, VkSampler sampler);
 
