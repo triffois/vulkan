@@ -1,2 +1,10 @@
-/home/kaba4ok/Documents/oles_territory/studies_in_Lviv/year3/sem1/os/project/vulkan_basic/glsl_stuff/bin/glslc shader.vert -o vert.spv
-/home/kaba4ok/Documents/oles_territory/studies_in_Lviv/year3/sem1/os/project/vulkan_basic/glsl_stuff/bin/glslc shader.frag -o frag.spv
+#!/bin/sh
+
+if [ $# -eq 0 ]; then
+	echo "Path to SPIR-V compiler must be supplied!"
+	exit
+fi
+
+${1} shader.vert -o vert.spv
+${1} shader.frag -o frag.spv
+${1} shader_instanced.vert -o vert_instanced.spv

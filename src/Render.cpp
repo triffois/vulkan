@@ -72,6 +72,14 @@ void Render::recordRenderingCommands(const Pipeline &pipeline) {
     VkBuffer vertexBuffers[] = {pipeline.getVertexBuffer()};
     VkDeviceSize offsets[] = {0};
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+
+    if (pipeline.isInstancedRenderingUsed()) {
+        VkBuffer instanceDataBuffers[] = {pipeline.getInstanceDataBuffer()};
+        VkDeviceSize instanceOffsets[] = {0};
+
+        vkCmdBindVertexBuffers(commandBuffer, 1, 1, instanceDataBuffers, instanceOffsets);
+    }
+
     vkCmdBindIndexBuffer(commandBuffer, pipeline.getIndexBuffer(), 0,
                          VK_INDEX_TYPE_UINT16);
 
@@ -80,7 +88,7 @@ void Render::recordRenderingCommands(const Pipeline &pipeline) {
                             pipeline.getLayout(), 0, 1, &currentDescriptorSet,
                             0, nullptr);
 
-    vkCmdDrawIndexed(commandBuffer, pipeline.getIndexCount(), 1, 0, 0, 0);
+    vkCmdDrawIndexed(commandBuffer, pipeline.getIndexCount(), pipeline.getNumInstances(), 0, 0, 0);
 }
 
 void Render::submitCommandBuffer() {

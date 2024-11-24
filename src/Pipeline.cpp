@@ -13,8 +13,8 @@
 Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                    const std::string &fragShaderPath, VkFormat colorFormat,
                    VkFormat depthFormat, const Model &model,
-                   uint32_t maxFramesInFlight)
-    : device(device), model(model) {
+                   uint32_t maxFramesInFlight,const std::vector<PerInstanceData> &instanceData)
+    : device(device), model(model), ifUseInstancedRendering(instanceData.size() > 0), numInstances(instanceData.size() > 0 ? instanceData.size() : 1) {
 
     // Create images from model textures
     const auto &modelTextures = model.getTextures();
@@ -27,6 +27,10 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     createUniformBuffers(maxFramesInFlight);
     createVertexBuffer();
     createIndexBuffer();
+
+    if (ifUseInstancedRendering) {
+        createInstanceDataBuffer(instanceData);
+    }
 
     // Only create texture resources if we have textures
     if (!model.getTextures().empty()) {
@@ -85,16 +89,28 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                                                       fragShaderStageInfo};
 
     // Vertex Input State
-    auto bindingDescription = Vertex::getBindingDescription();
-    auto attributeDescriptions = Vertex::getAttributeDescriptions();
+    size_t numBindings = 1;
+    std::vector<VkVertexInputBindingDescription> bindingDescription = {Vertex::getBindingDescription()};
+
+    auto vertexAttributes = Vertex::getAttributeDescriptions();
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = {vertexAttributes.begin(), vertexAttributes.end()};
+
+    if (ifUseInstancedRendering) {
+        bindingDescription.emplace_back(PerInstanceData::getBindingDescription());
+
+        auto instanceVertexDataAttributes = PerInstanceData::getAttributeDescriptions();
+        attributeDescriptions.insert(attributeDescriptions.end(), instanceVertexDataAttributes.begin(), instanceVertexDataAttributes.end());
+
+        numBindings = 2;
+    }
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType =
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-    vertexInputInfo.vertexBindingDescriptionCount = 1;
+    vertexInputInfo.vertexBindingDescriptionCount = numBindings;
     vertexInputInfo.vertexAttributeDescriptionCount =
         static_cast<uint32_t>(attributeDescriptions.size());
-    vertexInputInfo.pVertexBindingDescriptions = &bindingDescription;
+    vertexInputInfo.pVertexBindingDescriptions = bindingDescription.data();
     vertexInputInfo.pVertexAttributeDescriptions = attributeDescriptions.data();
 
     // Input Assembly
@@ -355,7 +371,7 @@ void Pipeline::createVertexBuffer() {
     vertexBuffer = std::make_unique<Buffer>(
         device, bufferSize,
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
 
     vertexBuffer->copyFrom(stagingBuffer, bufferSize);
 }
@@ -386,4 +402,27 @@ void Pipeline::createIndexBuffer() {
 
     // Copy from staging buffer to index buffer
     indexBuffer->copyFrom(stagingBuffer, bufferSize);
+}
+
+void Pipeline::createInstanceDataBuffer(const std::vector<PerInstanceData> &instanceData) {
+    VkDeviceSize bufferSize = sizeof(PerInstanceData) * instanceData.size();
+
+    Buffer stagingBuffer(
+        device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+        VMA_MEMORY_USAGE_AUTO,
+        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+    void *data;
+    stagingBuffer.map(&data);
+    memcpy(data, instanceData.data(), (size_t)bufferSize);
+    stagingBuffer.unmap();
+
+    instanceDataBuffer = std::make_unique<Buffer>(
+        device, bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
+
+    instanceDataBuffer->copyFrom(stagingBuffer, bufferSize);
 }

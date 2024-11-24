@@ -294,7 +294,7 @@ uint32_t SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore) {
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         handleResizing();
         return acquireNextImage(
-            imageAvailableSemaphore); // Retry after recreation
+            imageAvailableSemaphore);
     } else if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to acquire swap chain image!");
     }
