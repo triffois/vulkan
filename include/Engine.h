@@ -39,6 +39,11 @@ class Engine {
                             const std::string &fragShaderPath,
                             const Model &model);
 
+    Pipeline createPipelineInstanced(const std::string &vertShaderPath,
+                            const std::string &fragShaderPath,
+                            const Model &model,
+                            const std::vector<PerInstanceData> &instanceData);
+
   private:
     AppInstance appInstance;
     AppWindow appWindow;

@@ -47,6 +47,7 @@ Render Engine::startRender() {
 void Engine::finishRender(Render &render) {
     bool needsRecreation = render.finish();
 
+    //TODO: fix semaphores staying signaled when window is resized
     if (needsRecreation || framebufferResized) {
         framebufferResized = false;
         swapChain->handleResizing();
@@ -179,4 +180,12 @@ Pipeline Engine::createPipeline(const std::string &vertShaderPath,
     return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
                     swapChain->getImageFormat(), swapChain->findDepthFormat(),
                     model, MAX_FRAMES_IN_FLIGHT);
+}
+
+Pipeline Engine::createPipelineInstanced(const std::string &vertShaderPath, const std::string &fragShaderPath,
+    const Model &model, const std::vector<PerInstanceData> &instanceData) {
+
+    return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
+                    swapChain->getImageFormat(), swapChain->findDepthFormat(),
+                    model, MAX_FRAMES_IN_FLIGHT, instanceData);
 }

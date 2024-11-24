@@ -18,7 +18,7 @@ class Pipeline {
     Pipeline(Device *device, const std::string &vertShaderPath,
              const std::string &fragShaderPath, VkFormat colorFormat,
              VkFormat depthFormat, const Model &model,
-             uint32_t maxFramesInFlight);
+             uint32_t maxFramesInFlight, const std::vector<PerInstanceData> &instanceData = {});
 
     // TODO think about how to handle copying
 
@@ -35,7 +35,11 @@ class Pipeline {
     }
     VkBuffer getVertexBuffer() const { return vertexBuffer->getBuffer(); }
     VkBuffer getIndexBuffer() const { return indexBuffer->getBuffer(); }
+    VkBuffer getInstanceDataBuffer() const {return instanceDataBuffer->getBuffer();};
     uint32_t getIndexCount() const { return model.getIndices().size(); }
+
+    bool isInstancedRenderingUsed() const {return ifUseInstancedRendering;};
+    size_t getNumInstances() const {return numInstances;};
 
     glm::mat4 modelMatrix = glm::mat4(1.0f);
 
@@ -50,11 +54,18 @@ class Pipeline {
 
     std::unique_ptr<Buffer> vertexBuffer;
     std::unique_ptr<Buffer> indexBuffer;
+    std::unique_ptr<Buffer> instanceDataBuffer;
+
     DeviceMemoryAllocationHandle vertexBufferAllocation;
     DeviceMemoryAllocationHandle indexBufferAllocation;
 
+    bool ifUseInstancedRendering{false};
+    size_t numInstances{0};
+
     void createVertexBuffer();
     void createIndexBuffer();
+    void createInstanceDataBuffer(const std::vector<PerInstanceData> &instanceData);
+
     DeviceMemoryAllocationHandle createBuffer(VkDeviceSize size,
                                               VkBufferUsageFlags usage,
                                               VkMemoryPropertyFlags properties,
