@@ -1,7 +1,7 @@
 #pragma once
-#include <GLFW/glfw3.h>
 
 class EnginePeripheralsManager;
+
 class Time
 {
   friend class EnginePeripheralsManager;
@@ -14,6 +14,3 @@ class Time
     static double prevTimePoint;
     static double currentDeltaTime;
 };
-
-double Time::prevTimePoint = glfwGetTime();
-double Time::currentDeltaTime = 0;
