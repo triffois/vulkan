@@ -31,6 +31,7 @@ enum class VertexAttributesLocations : size_t {
     POSITION_LOCATION = 0,
     COLOR_LOCATION,
     TEXTURE_COORDINATE_LOCATION,
+    NORMAL_VECTOR_LOCATION,
     INSTANCE_MAT_COLUMN_0,
     INSTANCE_MAT_COLUMN_1,
     INSTANCE_MAT_COLUMN_2,
@@ -41,6 +42,7 @@ struct Vertex {
     glm::vec3 pos;
     glm::vec3 color;
     glm::vec2 texCoord;
+    glm::vec3 normalVector;
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -51,9 +53,9 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::array<VkVertexInputAttributeDescription, 3>
+    static std::array<VkVertexInputAttributeDescription, 4>
     getAttributeDescriptions() {
-        std::array<VkVertexInputAttributeDescription, 3>
+        std::array<VkVertexInputAttributeDescription, 4>
             attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
@@ -70,6 +72,11 @@ struct Vertex {
         attributeDescriptions[2].location = static_cast<size_t>(VertexAttributesLocations::TEXTURE_COORDINATE_LOCATION);
         attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
         attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+        attributeDescriptions[3].binding = 0;
+        attributeDescriptions[3].location = static_cast<size_t>(VertexAttributesLocations::NORMAL_VECTOR_LOCATION);
+        attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescriptions[3].offset = offsetof(Vertex, normalVector);
 
         return attributeDescriptions;
     }
@@ -118,10 +125,17 @@ struct PerInstanceData {
     }
 };
 
+struct SimpleLightSource { //alignas(16)
+    alignas(16) glm::vec3 lightColor{};
+    alignas(16) glm::vec3 lightPos{};
+    alignas(4)  float lightIntensity{};
+};
+
 struct UniformBufferObject {
-    alignas(16) glm::mat4 model;
-    alignas(16) glm::mat4 view;
-    alignas(16) glm::mat4 proj;
+    alignas(16) glm::mat4 model{};
+    alignas(16) glm::mat4 view{};
+    alignas(16) glm::mat4 proj{};
+    alignas(16) SimpleLightSource lights[3]{{},{},{}};
 };
 
 struct AppContext {

@@ -73,6 +73,16 @@ ModelLoader::Primitive ModelLoader::processPrimitive(const tinygltf::Primitive& 
             &texBuffer.data[texView.byteOffset + texAccessor.byteOffset]);
     }
 
+    const float* normVectors = nullptr;
+    if (primitive.attributes.find("NORMAL") != primitive.attributes.end()) {
+        const tinygltf::Accessor& normAccessor =
+            model.accessors[primitive.attributes.at("NORMAL")];
+        const tinygltf::BufferView& normView = model.bufferViews[normAccessor.bufferView];
+        const tinygltf::Buffer& normBuffer = model.buffers[normView.buffer];
+        normVectors = reinterpret_cast<const float*>(
+            &normBuffer.data[normView.byteOffset + normAccessor.byteOffset]);
+    }
+
     // Process vertices
     for (size_t i = 0; i < posAccessor.count; i++) {
         glm::vec4 pos = transform * glm::vec4(
@@ -87,6 +97,10 @@ ModelLoader::Primitive ModelLoader::processPrimitive(const tinygltf::Primitive& 
 
         if (texCoords) {
             vertex.texCoord = glm::vec2(texCoords[i * 2], texCoords[i * 2 + 1]);
+        }
+
+        if (normVectors) {
+            vertex.normalVector = glm::vec3(normVectors[i * 3], normVectors[i * 3 + 1], normVectors[i * 3 + 2]);
         }
 
         result.vertices.push_back(vertex);
