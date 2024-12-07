@@ -52,8 +52,8 @@ int main(int argc, char *argv[]) {
     // Create pipeline(s) outside the engine
     std::vector<Pipeline> pipelines;
 
-    bool useInstancedRendering = false;
-    size_t numInstances {5};
+    bool useInstancedRendering = true;
+    size_t numInstances {3};
 
     if (useInstancedRendering) {
 

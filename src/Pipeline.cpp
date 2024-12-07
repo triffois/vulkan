@@ -14,7 +14,7 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
                    const std::string &fragShaderPath, VkFormat colorFormat,
                    VkFormat depthFormat, const Model &model,
                    uint32_t maxFramesInFlight,const std::vector<PerInstanceData> &instanceData)
-    : device(device), model(model), ifUseInstancedRendering(instanceData.size() > 0), numInstances(instanceData.size() > 0 ? instanceData.size() : 1) {
+    : device(device), model(model), ifUseInstancedRendering(instanceData.size() > 0), numInstances(instanceData.size() > 0 ? instanceData.size() : 1), numStaticLightSources(1) {
 
     // Create images from model textures
     const auto &modelTextures = model.getTextures();
@@ -25,6 +25,7 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     }
 
     createUniformBuffers(maxFramesInFlight);
+    createUniformStaticLightingBuffers();
     createVertexBuffer();
     createIndexBuffer();
 
@@ -38,14 +39,15 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     }
 
     descriptorLayout.init(*device->getDevice());
-    descriptorPool.init(*device->getDevice(), maxFramesInFlight);
+    descriptorPool.init(*device->getDevice(), maxFramesInFlight, 1);
     descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
                        maxFramesInFlight);
 
     // Always update uniform buffer descriptors
     for (size_t i = 0; i < maxFramesInFlight; i++) {
         descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
-                                       sizeof(UniformBufferObject));
+                                       sizeof(UniformBufferObject)); //potential bug
+        descriptorSet.updateBufferInfo(2, uniformLightingBuffers[0]->getBuffer(), 0, sizeof(SimpleLightSource) * numStaticLightSources);
     }
 
     // Only update texture descriptors if we have textures
@@ -293,6 +295,27 @@ void Pipeline::createUniformBuffers(uint32_t maxFramesInFlight) {
     }
 }
 
+void Pipeline::createUniformStaticLightingBuffers()
+{
+    static constexpr size_t nLightsBuffers = 1;
+
+    VkDeviceSize bufferSize = sizeof(SimpleLightSource) * numStaticLightSources;
+
+    uniformLightingBuffers.resize(nLightsBuffers);
+    mappedUniformLightingBuffers.resize(nLightsBuffers);
+
+    for (size_t i = 0; i < nLightsBuffers; i++) {
+        uniformLightingBuffers[i] = std::make_unique<Buffer>(
+            device, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+            VMA_MEMORY_USAGE_AUTO,
+            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
+
+        uniformLightingBuffers[i]->map(&mappedUniformLightingBuffers[i]);
+    }
+}
+
 void Pipeline::cleanup() {
     if (graphicsPipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(*device->getDevice(), graphicsPipeline, nullptr);
@@ -332,7 +355,15 @@ void Pipeline::updateUniformBuffer(uint32_t currentFrame, Camera &camera,
         swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
     ubo.proj[1][1] *= -1;
 
+    ubo.camPos = glm::vec4{camera.Position, 0.0f};
+
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+}
+
+void Pipeline::updateUniformLightingBuffers() const {
+    std::vector<SimpleLightSource> lights = {SimpleLightSource{glm::vec4{25.0,150.0,65.0, 1.0}, glm::vec4{10.0,5.0,-2.0, 0.0}, 1.0f}};
+
+    memcpy(mappedUniformLightingBuffers[0], lights.data(), sizeof(lights));
 }
 
 std::vector<char> Pipeline::readFile(const std::string &filename) {

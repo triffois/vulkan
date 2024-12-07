@@ -126,8 +126,8 @@ struct PerInstanceData {
 };
 
 struct SimpleLightSource { //alignas(16)
-    alignas(16) glm::vec3 lightColor{};
-    alignas(16) glm::vec3 lightPos{};
+    alignas(16) glm::vec4 lightColor{};
+    alignas(16) glm::vec4 lightPos{};
     alignas(4)  float lightIntensity{};
 };
 
@@ -135,7 +135,7 @@ struct UniformBufferObject {
     alignas(16) glm::mat4 model{};
     alignas(16) glm::mat4 view{};
     alignas(16) glm::mat4 proj{};
-    alignas(16) SimpleLightSource lights[3]{{},{},{}};
+    alignas(16) glm::vec4 camPos{};
 };
 
 struct AppContext {
