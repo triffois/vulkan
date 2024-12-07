@@ -26,7 +26,7 @@ class Pipeline {
     void updateUniformBuffer(uint32_t currentFrame, Camera &camera,
                              const VkExtent2D &swapChainExtent) const;
 
-    void updateUniformLightingBuffers() const; //TODO: this will be more needed when the lighting becomes dynamic
+    void updateUniformStaticLightingBuffers() const; //TODO: this will be more needed when the lighting becomes dynamic
 
     VkPipeline getPipeline() const { return graphicsPipeline; }
     VkPipelineLayout getLayout() const { return pipelineLayout; }
@@ -85,7 +85,7 @@ class Pipeline {
     std::vector<std::unique_ptr<Buffer>> uniformLightingBuffers;
     std::vector<void *> mappedUniformLightingBuffers;
     std::vector<DeviceMemoryAllocationHandle> uniformLightsAllocations;
-    const size_t numStaticLightSources;
+    const size_t numSimpleLightSources;
 
     glm::mat4 calculateModelMatrix() const;
 
@@ -93,7 +93,7 @@ class Pipeline {
     VkShaderModule createShaderModule(const std::vector<char> &code);
     std::vector<char> readFile(const std::string &filename);
 
-    void createUniformStaticLightingBuffers();
+    void createUniformSimpleLightingBuffers();
 
     void createTextureResources();
     void createTextureSampler();

@@ -129,6 +129,7 @@ struct SimpleLightSource { //alignas(16)
     alignas(16) glm::vec4 lightColor{};
     alignas(16) glm::vec4 lightPos{};
     alignas(4)  float lightIntensity{};
+    alignas(4) int lightRange{};
 };
 
 struct UniformBufferObject {
