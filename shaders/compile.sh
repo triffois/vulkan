@@ -7,4 +7,3 @@ fi
 
 ${1} shader.vert -o vert.spv
 ${1} shader.frag -o frag.spv
-${1} shader_instanced.vert -o vert_instanced.spv
