@@ -18,6 +18,10 @@ void TextureManager::cleanup() {
 }
 
 TextureID TextureManager::registerTexture(const TextureData &textureData) {
+    if (resourcesPrepared) {
+        throw std::runtime_error(
+            "Cannot register texture after resources have been prepared");
+    }
     if (textures.size() >= MAX_TEXTURE_COUNT) {
         throw std::runtime_error("Maximum texture count exceeded");
     }
@@ -29,7 +33,6 @@ TextureID TextureManager::registerTexture(const TextureData &textureData) {
     }
 
     textures.push_back(textureData);
-    needsUpdate = true;
     return static_cast<TextureID>(textures.size() - 1);
 }
 
@@ -108,18 +111,15 @@ void TextureManager::updateTextureArray() {
     textureImage->transitionImageLayout(
         VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-    needsUpdate = false;
 }
 
 void TextureManager::prepareResources() {
-    if (!resourcesPrepared) {
-        createTextureArray();
-        createSampler();
-        resourcesPrepared = true;
-    } else if (needsUpdate) {
-        updateTextureArray();
+    if (resourcesPrepared) {
+        std::runtime_error("Resources have already been prepared");
     }
+    createTextureArray();
+    createSampler();
+    resourcesPrepared = true;
 }
 
 void TextureManager::createSampler() {
