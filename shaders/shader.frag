@@ -3,7 +3,7 @@
 layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-    vec2 textureResolutions[256];
+    vec4 textureResolutions[256];
 }
 ubo;
 
@@ -21,7 +21,7 @@ void main() {
     if (textureIndex < 0) {
         outColor = vec4(fragColor, 1.0);
     } else {
-        vec2 resolution = ubo.textureResolutions[textureIndex];
+        vec2 resolution = ubo.textureResolutions[textureIndex].xy;
         vec2 scaledUV = fragTexCoord * resolution;
         outColor = texture(texSampler, vec3(scaledUV, float(textureIndex)));
     }

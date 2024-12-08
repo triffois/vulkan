@@ -3,7 +3,7 @@
 layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-    vec2 textureResolutions[256];
+    vec4 textureResolutions[256];
 } ubo;
 
 layout(location = 0) in vec3 inPosition;

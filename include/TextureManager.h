@@ -32,14 +32,15 @@ class TextureManager {
     void prepareResources();
     void cleanup();
 
-    std::vector<glm::vec2> getTextureResolutions() const {
-        std::vector<glm::vec2> resolutions;
+    std::vector<glm::vec4> getTextureResolutions() const {
+        std::vector<glm::vec4> resolutions;
         resolutions.reserve(textures.size());
         for (size_t i = 0; i < textures.size(); i++) {
             const auto &texture = textures[i];
-            auto resolution = glm::vec2(
+            auto resolution = glm::vec4(
                 texture.width / static_cast<float>(MAX_TEXTURE_DIMENSION),
-                texture.height / static_cast<float>(MAX_TEXTURE_DIMENSION));
+                texture.height / static_cast<float>(MAX_TEXTURE_DIMENSION), 0,
+                0);
             resolutions.push_back(resolution);
         }
         return resolutions;

@@ -81,7 +81,7 @@ struct Vertex {
 struct UniformBufferObject {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec2 textureResolutions[256];
+    alignas(16) glm::vec4 textureResolutions[256];
 };
 
 struct AppContext {

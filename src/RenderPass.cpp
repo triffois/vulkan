@@ -94,12 +94,12 @@ void RenderPass::updateUniformBuffer(uint32_t currentFrame,
     auto resolutions =
         globalResources->getTextureManager().getTextureResolutions();
 
-    for (size_t i = 0; i < resolutions.size(); i++) {
-        ubo.textureResolutions[i] = resolutions[i];
-    }
     // Fill remaining slots with zero
     for (size_t i = resolutions.size(); i < 256; i++) {
-        ubo.textureResolutions[i] = glm::vec2(0.0f);
+        ubo.textureResolutions[i] = glm::vec4(0.0f);
+    }
+    for (size_t i = 0; i < resolutions.size(); i++) {
+        ubo.textureResolutions[i] = resolutions[i];
     }
 
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
