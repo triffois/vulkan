@@ -11,10 +11,8 @@ buildInstanceData(const std::vector<Instance> &instances) {
         // Get transform matrix
         data.transform = instance.getTransformMatrix();
 
-        // Pack texture indices into vec4
-        data.textureIndices = glm::vec4(
-            instance.material.textureIds[0], instance.material.textureIds[1],
-            instance.material.textureIds[2], instance.material.textureIds[3]);
+        // Copy texture indices directly from material
+        data.textureIndices = instance.material.textureIds;
 
         instanceData.push_back(data);
     }

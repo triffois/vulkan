@@ -90,5 +90,17 @@ void RenderPass::updateUniformBuffer(uint32_t currentFrame,
         swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
     ubo.proj[1][1] *= -1;
 
+    // Get texture resolutions and fill the array
+    auto resolutions =
+        globalResources->getTextureManager().getTextureResolutions();
+
+    for (size_t i = 0; i < resolutions.size(); i++) {
+        ubo.textureResolutions[i] = resolutions[i];
+    }
+    // Fill remaining slots with zero
+    for (size_t i = resolutions.size(); i < 256; i++) {
+        ubo.textureResolutions[i] = glm::vec2(0.0f);
+    }
+
     memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
 }

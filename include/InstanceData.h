@@ -7,7 +7,8 @@
 // This struct repreents the GPU-side instance data layout
 struct InstanceData {
     alignas(16) glm::mat4 transform;
-    alignas(16) glm::vec4 textureIndices; // Packed texture indices
+    alignas(
+        16) std::array<int32_t, 4> textureIndices; // Array of texture indices
 
     static VkVertexInputBindingDescription getBindingDescription() {
         VkVertexInputBindingDescription bindingDescription{};
@@ -33,7 +34,7 @@ struct InstanceData {
         // Material data (texture indices)
         attributeDescriptions[4].binding = 1;
         attributeDescriptions[4].location = 7; // Location 7
-        attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+        attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
         attributeDescriptions[4].offset =
             offsetof(InstanceData, textureIndices);
 
