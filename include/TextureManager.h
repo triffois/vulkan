@@ -44,10 +44,6 @@ class TextureManager {
     std::unique_ptr<Image> textureImage;
     VkSampler textureSampler = VK_NULL_HANDLE;
 
-    // Huhh why is this here I don't remember writing this
-    // TODO: Remove ???
-    bool needsUpdate = false;
-
     static constexpr uint32_t MAX_TEXTURE_COUNT = 256;
     static constexpr uint32_t MAX_TEXTURE_DIMENSION = 1024;
 

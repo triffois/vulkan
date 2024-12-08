@@ -4,7 +4,7 @@
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
 
-// This struct represents the GPU-side instance data layout
+// This struct repreents the GPU-side instance data layout
 struct InstanceData {
     alignas(16) glm::mat4 transform;
     alignas(16) glm::vec4 textureIndices; // Packed texture indices
@@ -30,9 +30,9 @@ struct InstanceData {
             attributeDescriptions[i].offset = i * sizeof(glm::vec4);
         }
 
-        // Texture indices
+        // Material data (texture indices)
         attributeDescriptions[4].binding = 1;
-        attributeDescriptions[4].location = 7;
+        attributeDescriptions[4].location = 7; // Location 7
         attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
         attributeDescriptions[4].offset =
             offsetof(InstanceData, textureIndices);

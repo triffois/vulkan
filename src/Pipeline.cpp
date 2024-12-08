@@ -1,4 +1,5 @@
 #include "Pipeline.h"
+#include "InstanceData.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
 #include <fstream>
@@ -48,10 +49,10 @@ void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions = {
         vertexAttributes.begin(), vertexAttributes.end()};
 
-    bindingDescription.emplace_back(PerInstanceData::getBindingDescription());
+    bindingDescription.emplace_back(InstanceData::getBindingDescription());
 
     auto instanceVertexDataAttributes =
-        PerInstanceData::getAttributeDescriptions();
+        InstanceData::getAttributeDescriptions();
     attributeDescriptions.insert(attributeDescriptions.end(),
                                  instanceVertexDataAttributes.begin(),
                                  instanceVertexDataAttributes.end());
