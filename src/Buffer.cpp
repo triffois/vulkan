@@ -1,5 +1,6 @@
 #include "Buffer.h"
 #include "CommandBuffer.h"
+#include "Device.h"
 #include <stdexcept>
 
 Buffer::Buffer(Device *device, VkDeviceSize size, VkBufferUsageFlags usage,
@@ -44,14 +45,15 @@ Buffer::~Buffer() {
     }
 }
 
-void Buffer::recordCopyTo(VkCommandBuffer cmdBuffer, Buffer& dstBuffer, VkDeviceSize size) const {
+void Buffer::recordCopyTo(VkCommandBuffer cmdBuffer, Buffer &dstBuffer,
+                          VkDeviceSize size) const {
     VkBufferCopy copyRegion{};
     copyRegion.size = size;
     vkCmdCopyBuffer(cmdBuffer, buffer, dstBuffer.getBuffer(), 1, &copyRegion);
 }
 
-void Buffer::recordCopyToImage(VkCommandBuffer cmdBuffer, VkImage image, 
-                             uint32_t width, uint32_t height) const {
+void Buffer::recordCopyToImage(VkCommandBuffer cmdBuffer, VkImage image,
+                               uint32_t width, uint32_t height) const {
     VkBufferImageCopy region{};
     region.bufferOffset = 0;
     region.bufferRowLength = 0;
@@ -64,10 +66,10 @@ void Buffer::recordCopyToImage(VkCommandBuffer cmdBuffer, VkImage image,
     region.imageExtent = {width, height, 1};
 
     vkCmdCopyBufferToImage(cmdBuffer, buffer, image,
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
 }
 
-void Buffer::copyFrom(Buffer& srcBuffer, VkDeviceSize size) {
+void Buffer::copyFrom(Buffer &srcBuffer, VkDeviceSize size) {
     CommandBuffer cmd(device, device->getGraphicsCommandPool());
     cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     srcBuffer.recordCopyTo(cmd.getCommandBuffer(), *this, size);
@@ -87,6 +89,20 @@ void Buffer::copyToImage(VkImage image, uint32_t width, uint32_t height) {
     CommandBuffer cmd(device, device->getGraphicsCommandPool());
     cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
     recordCopyToImage(cmd.getCommandBuffer(), image, width, height);
+    cmd.end();
+    cmd.submit(VK_NULL_HANDLE, true);
+}
+
+void Buffer::copyToImage(VkImage image,
+                         const std::vector<VkBufferImageCopy> &regions) {
+    CommandBuffer cmd(device, device->getGraphicsCommandPool());
+    cmd.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+
+    vkCmdCopyBufferToImage(cmd.getCommandBuffer(), buffer, image,
+                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                           static_cast<uint32_t>(regions.size()),
+                           regions.data());
+
     cmd.end();
     cmd.submit(VK_NULL_HANDLE, true);
 }

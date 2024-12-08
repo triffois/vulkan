@@ -17,6 +17,7 @@
 #include "CommandBuffer.h"
 #include "Device.h"
 #include "EnginePeripherals.h"
+#include "GlobalResources.h"
 #include "Pipeline.h"
 #include "Render.h"
 #include "SwapChain.h"
@@ -34,20 +35,18 @@ class Engine {
     void finishRender(Render &render);
     Camera *getCamera();
 
+    GlobalResources &getGlobalResources() { return globalResources; }
     Device *getDevice() { return &appDevice; }
-    Pipeline createPipeline(const std::string &vertShaderPath,
-                            const std::string &fragShaderPath,
-                            const Model &model);
+    PipelineID createPipeline(const std::string &vertShaderPath,
+                              const std::string &fragShaderPath);
 
-    Pipeline createPipelineInstanced(const std::string &vertShaderPath,
-                            const std::string &fragShaderPath,
-                            const Model &model,
-                            const std::vector<PerInstanceData> &instanceData);
+    void prepareResources();
 
   private:
     AppInstance appInstance;
     AppWindow appWindow;
     Device appDevice;
+    GlobalResources globalResources;
     VkDevice device;
     std::unique_ptr<SwapChain> swapChain;
     std::vector<Pipeline> pipelines;

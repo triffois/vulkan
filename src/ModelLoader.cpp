@@ -1,4 +1,5 @@
 #include "ModelLoader.h"
+#include "TextureManager.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <iostream>
@@ -6,80 +7,81 @@
 // This implementation was *heavily inspired wink wink* by rhusiev's
 // https://github.com/triffois/raytracer/blob/main/src/load_model.cpp
 
-void ModelLoader::processNode(std::map<int32_t, Primitive>& materialPrimitives,
-                            const Node& node,
-                            const tinygltf::Model& model,
-                            const glm::mat4& parentTransform) {
+void ModelLoader::processNode(
+    std::map<int32_t, ProcessedPrimitive> &materialPrimitives, const Node &node,
+    const tinygltf::Model &model, const glm::mat4 &parentTransform) {
     glm::mat4 localTransform = parentTransform * node.transform;
 
     // Process all meshes in this node
     for (uint32_t meshIndex : node.meshIndices) {
-        const tinygltf::Mesh& mesh = model.meshes[meshIndex];
+        const tinygltf::Mesh &mesh = model.meshes[meshIndex];
 
-        for (const auto& primitive : mesh.primitives) {
+        for (const auto &primitive : mesh.primitives) {
             if (primitive.mode != TINYGLTF_MODE_TRIANGLES) {
                 continue;
             }
 
-            Primitive processedPrim = processPrimitive(primitive, model, localTransform);
-            
+            ProcessedPrimitive processedPrim =
+                processPrimitive(primitive, model, localTransform);
+
             // Merge with existing primitive of the same material or create new
-            auto& materialPrim = materialPrimitives[processedPrim.materialIndex];
+            auto &materialPrim =
+                materialPrimitives[processedPrim.materialIndex];
             materialPrim.materialIndex = processedPrim.materialIndex;
 
             // Adjust indices for the merged vertex buffer
-            uint32_t vertexOffset = static_cast<uint32_t>(materialPrim.vertices.size());
+            uint32_t vertexOffset =
+                static_cast<uint32_t>(materialPrim.vertices.size());
             for (uint32_t index : processedPrim.indices) {
                 materialPrim.indices.push_back(vertexOffset + index);
             }
 
             // Append vertices
-            materialPrim.vertices.insert(
-                materialPrim.vertices.end(),
-                processedPrim.vertices.begin(),
-                processedPrim.vertices.end()
-            );
+            materialPrim.vertices.insert(materialPrim.vertices.end(),
+                                         processedPrim.vertices.begin(),
+                                         processedPrim.vertices.end());
         }
     }
 
     // Process child nodes
-    for (const auto& child : node.children) {
+    for (const auto &child : node.children) {
         processNode(materialPrimitives, child, model, localTransform);
     }
 }
 
-ModelLoader::Primitive ModelLoader::processPrimitive(const tinygltf::Primitive& primitive,
-                                      const tinygltf::Model& model,
-                                      const glm::mat4& transform) {
-    Primitive result;
+ModelLoader::ProcessedPrimitive
+ModelLoader::processPrimitive(const tinygltf::Primitive &primitive,
+                              const tinygltf::Model &model,
+                              const glm::mat4 &transform) {
+    ProcessedPrimitive result;
     result.materialIndex = primitive.material;
 
     // Get vertex positions
-    const tinygltf::Accessor& posAccessor = 
+    const tinygltf::Accessor &posAccessor =
         model.accessors[primitive.attributes.find("POSITION")->second];
-    const tinygltf::BufferView& posView = model.bufferViews[posAccessor.bufferView];
-    const tinygltf::Buffer& posBuffer = model.buffers[posView.buffer];
-    const float* positions = reinterpret_cast<const float*>(
+    const tinygltf::BufferView &posView =
+        model.bufferViews[posAccessor.bufferView];
+    const tinygltf::Buffer &posBuffer = model.buffers[posView.buffer];
+    const float *positions = reinterpret_cast<const float *>(
         &posBuffer.data[posView.byteOffset + posAccessor.byteOffset]);
 
     // Get texture coordinates if available
-    const float* texCoords = nullptr;
+    const float *texCoords = nullptr;
     if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end()) {
-        const tinygltf::Accessor& texAccessor = 
+        const tinygltf::Accessor &texAccessor =
             model.accessors[primitive.attributes.at("TEXCOORD_0")];
-        const tinygltf::BufferView& texView = model.bufferViews[texAccessor.bufferView];
-        const tinygltf::Buffer& texBuffer = model.buffers[texView.buffer];
-        texCoords = reinterpret_cast<const float*>(
+        const tinygltf::BufferView &texView =
+            model.bufferViews[texAccessor.bufferView];
+        const tinygltf::Buffer &texBuffer = model.buffers[texView.buffer];
+        texCoords = reinterpret_cast<const float *>(
             &texBuffer.data[texView.byteOffset + texAccessor.byteOffset]);
     }
 
     // Process vertices
     for (size_t i = 0; i < posAccessor.count; i++) {
-        glm::vec4 pos = transform * glm::vec4(
-            positions[i * 3],
-            positions[i * 3 + 1],
-            positions[i * 3 + 2],
-            1.0f);
+        glm::vec4 pos =
+            transform * glm::vec4(positions[i * 3], positions[i * 3 + 1],
+                                  positions[i * 3 + 2], 1.0f);
 
         Vertex vertex{};
         vertex.pos = glm::vec3(pos);
@@ -93,27 +95,29 @@ ModelLoader::Primitive ModelLoader::processPrimitive(const tinygltf::Primitive& 
     }
 
     // Process indices
-    const tinygltf::Accessor& indexAccessor = model.accessors[primitive.indices];
-    const tinygltf::BufferView& indexView = model.bufferViews[indexAccessor.bufferView];
-    const tinygltf::Buffer& indexBuffer = model.buffers[indexView.buffer];
+    const tinygltf::Accessor &indexAccessor =
+        model.accessors[primitive.indices];
+    const tinygltf::BufferView &indexView =
+        model.bufferViews[indexAccessor.bufferView];
+    const tinygltf::Buffer &indexBuffer = model.buffers[indexView.buffer];
 
     switch (indexAccessor.componentType) {
-        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
-            const uint16_t* indices = reinterpret_cast<const uint16_t*>(
-                &indexBuffer.data[indexView.byteOffset + indexAccessor.byteOffset]);
-            for (size_t i = 0; i < indexAccessor.count; i++) {
-                result.indices.push_back(indices[i]);
-            }
-            break;
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT: {
+        const uint16_t *indices = reinterpret_cast<const uint16_t *>(
+            &indexBuffer.data[indexView.byteOffset + indexAccessor.byteOffset]);
+        for (size_t i = 0; i < indexAccessor.count; i++) {
+            result.indices.push_back(indices[i]);
         }
-        case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
-            const uint32_t* indices = reinterpret_cast<const uint32_t*>(
-                &indexBuffer.data[indexView.byteOffset + indexAccessor.byteOffset]);
-            for (size_t i = 0; i < indexAccessor.count; i++) {
-                result.indices.push_back(indices[i]);
-            }
-            break;
+        break;
+    }
+    case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT: {
+        const uint32_t *indices = reinterpret_cast<const uint32_t *>(
+            &indexBuffer.data[indexView.byteOffset + indexAccessor.byteOffset]);
+        for (size_t i = 0; i < indexAccessor.count; i++) {
+            result.indices.push_back(indices[i]);
         }
+        break;
+    }
     }
 
     return result;
@@ -170,7 +174,9 @@ ModelLoader::Node ModelLoader::processGLTFNode(const tinygltf::Node &inputNode,
     return node;
 }
 
-TextureData ModelLoader::processImage(const tinygltf::Image& image, const tinygltf::Model& model) {
+TextureID ModelLoader::processImage(const tinygltf::Image &image,
+                                    const tinygltf::Model &model,
+                                    TextureManager &textureManager) {
     TextureData textureData;
     textureData.width = image.width;
     textureData.height = image.height;
@@ -182,31 +188,85 @@ TextureData ModelLoader::processImage(const tinygltf::Image& image, const tinygl
         textureData.pixels = image.image;
     } else if (image.bufferView >= 0) {
         // Image data is stored in a buffer view
-        const tinygltf::BufferView& bufferView = model.bufferViews[image.bufferView];
-        const tinygltf::Buffer& buffer = model.buffers[bufferView.buffer];
-        
-        const unsigned char* data = buffer.data.data() + bufferView.byteOffset;
+        const tinygltf::BufferView &bufferView =
+            model.bufferViews[image.bufferView];
+        const tinygltf::Buffer &buffer = model.buffers[bufferView.buffer];
+
+        const unsigned char *data = buffer.data.data() + bufferView.byteOffset;
         size_t dataSize = bufferView.byteLength;
-        
+
         textureData.pixels.resize(dataSize);
         std::memcpy(textureData.pixels.data(), data, dataSize);
     }
 
-    return textureData;
+    // Register the texture with the TextureManager
+    return textureManager.registerTexture(textureData);
 }
 
-std::vector<TextureData> ModelLoader::processTextures(const tinygltf::Model& model) {
-    std::vector<TextureData> textures;
+MaterialInstance
+ModelLoader::processMaterial(const tinygltf::Material &material,
+                             const tinygltf::Model &model,
+                             TextureManager &textureManager) {
+    MaterialInstance materialInstance;
+
+    // Process base color texture (index 0)
+    if (material.pbrMetallicRoughness.baseColorTexture.index >= 0) {
+        int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
+        int imageIndex = model.textures[textureIndex].source;
+        if (imageIndex >= 0) {
+            materialInstance.textureIds[0] =
+                processImage(model.images[imageIndex], model, textureManager);
+        }
+    }
+
+    // Process metallic-roughness texture (index 1)
+    if (material.pbrMetallicRoughness.metallicRoughnessTexture.index >= 0) {
+        int textureIndex =
+            material.pbrMetallicRoughness.metallicRoughnessTexture.index;
+        int imageIndex = model.textures[textureIndex].source;
+        if (imageIndex >= 0) {
+            materialInstance.textureIds[1] =
+                processImage(model.images[imageIndex], model, textureManager);
+        }
+    }
+
+    // Process normal map (index 2)
+    if (material.normalTexture.index >= 0) {
+        int imageIndex = model.textures[material.normalTexture.index].source;
+        if (imageIndex >= 0) {
+            materialInstance.textureIds[2] =
+                processImage(model.images[imageIndex], model, textureManager);
+        }
+    }
+
+    // Process occlusion texture (index 3)
+    if (material.occlusionTexture.index >= 0) {
+        int imageIndex = model.textures[material.occlusionTexture.index].source;
+        if (imageIndex >= 0) {
+            materialInstance.textureIds[3] =
+                processImage(model.images[imageIndex], model, textureManager);
+        }
+    }
+
+    return materialInstance;
+}
+
+std::vector<TextureID>
+ModelLoader::processTextures(const tinygltf::Model &model,
+                             TextureManager &textureManager) {
+    std::vector<TextureID> textures;
     textures.reserve(model.images.size());
 
-    for (const auto& image : model.images) {
-        textures.push_back(processImage(image, model));
+    for (const auto &image : model.images) {
+        textures.push_back(processImage(image, model, textureManager));
     }
 
     return textures;
 }
 
-std::vector<Model> ModelLoader::loadFromGLTF(const std::string& filename) {
+Scene ModelLoader::loadFromGLTF(const std::string &filename,
+                                GlobalResources &resources,
+                                PipelineID pipelineId) {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF loader;
     std::string err, warn;
@@ -214,9 +274,9 @@ std::vector<Model> ModelLoader::loadFromGLTF(const std::string& filename) {
     bool isBinary = filename.length() > 4 &&
                     filename.substr(filename.length() - 4) == ".glb";
 
-    bool loaded = isBinary 
-        ? loader.LoadBinaryFromFile(&gltfModel, &err, &warn, filename)
-        : loader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename);
+    bool loaded =
+        isBinary ? loader.LoadBinaryFromFile(&gltfModel, &err, &warn, filename)
+                 : loader.LoadASCIIFromFile(&gltfModel, &err, &warn, filename);
 
     if (!warn.empty()) {
         std::cerr << "GLTF Warning: " << warn << std::endl;
@@ -230,46 +290,53 @@ std::vector<Model> ModelLoader::loadFromGLTF(const std::string& filename) {
         throw std::runtime_error("Failed to load GLTF file: " + filename);
     }
 
-    // Process the scene
-    const tinygltf::Scene& scene =
-        gltfModel.scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
-
-    std::map<int32_t, Primitive> materialPrimitives;
+    Scene scene(&resources);
+    std::map<int32_t, ProcessedPrimitive> materialPrimitives;
 
     // Process each root node
-    for (int nodeIdx : scene.nodes) {
+    const tinygltf::Scene &gltfScene =
+        gltfModel
+            .scenes[gltfModel.defaultScene > -1 ? gltfModel.defaultScene : 0];
+
+    for (int nodeIdx : gltfScene.nodes) {
         Node rootNode = processGLTFNode(gltfModel.nodes[nodeIdx], gltfModel);
         processNode(materialPrimitives, rootNode, gltfModel, glm::mat4(1.0f));
     }
 
-    // Create models from consolidated primitives
-    std::vector<Model> models;
-    models.reserve(materialPrimitives.size());
+    // Create render batches from processed primitives
+    createRenderBatches(materialPrimitives, gltfModel, resources, &scene,
+                        pipelineId);
 
-    for (const auto& [materialIndex, primitive] : materialPrimitives) {
-        std::vector<uint16_t> indices16;
-        indices16.reserve(primitive.indices.size());
-        for (uint32_t idx : primitive.indices) {
-            indices16.push_back(static_cast<uint16_t>(idx));
-        }
+    return scene;
+}
 
-        std::vector<TextureData> textures;
+void ModelLoader::createRenderBatches(
+    const std::map<int32_t, ProcessedPrimitive> &primitives,
+    const tinygltf::Model &model, GlobalResources &resources, Scene *scene,
+    PipelineID pipelineId) {
+
+    auto &meshManager = resources.getMeshManager();
+    auto &pipelineManager = resources.getPipelineManager();
+    auto &textureManager = resources.getTextureManager();
+
+    for (const auto &[materialIndex, primitive] : primitives) {
+        // Register mesh with MeshManager
+        MeshID meshId =
+            meshManager.registerMesh(primitive.vertices, primitive.indices);
+
+        // Create a single instance for this primitive
+        Instance instance;
         if (materialIndex >= 0) {
-            const tinygltf::Material& material = gltfModel.materials[materialIndex];
-            
-            // Handle base color texture
-            if (material.pbrMetallicRoughness.baseColorTexture.index >= 0) {
-                int textureIndex = material.pbrMetallicRoughness.baseColorTexture.index;
-                int imageIndex = gltfModel.textures[textureIndex].source;
-                if (imageIndex >= 0) {
-                    textures.push_back(processImage(gltfModel.images[imageIndex], gltfModel));
-                }
-            }
-            // Add other texture types as needed
+            instance.material = processMaterial(model.materials[materialIndex],
+                                                model, textureManager);
         }
 
-        models.emplace_back(primitive.vertices, indices16, textures);
-    }
+        // Create render batch
+        RenderBatch batch;
+        batch.meshId = meshId;
+        batch.pipelineId = pipelineId;
+        batch.instances.push_back(instance);
 
-    return models;
+        scene->addBatch(std::move(batch));
+    }
 }

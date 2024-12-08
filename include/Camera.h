@@ -44,7 +44,7 @@ class Camera {
         updateCameraVectors();
     }
 
-    glm::mat4 const GetViewMatrix() {
+    glm::mat4 GetViewMatrix() const {
         return glm::lookAt(Position, Position + Front, Up);
     }
 
@@ -101,7 +101,7 @@ class Camera {
             Zoom = 45.0f;
     }
 
-    float const getZoom() { return Zoom; }
+    float getZoom() const { return Zoom; }
 
   private:
     void updateCameraVectors() {

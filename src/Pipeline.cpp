@@ -1,69 +1,20 @@
 #include "Pipeline.h"
-#include "Buffer.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
 #include <fstream>
-#include <memory>
 #include <stdexcept>
 
 #include "commonstructs.h"
 
 #include <stb_image.h>
 
-Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
-                   const std::string &fragShaderPath, VkFormat colorFormat,
-                   VkFormat depthFormat, const Model &model,
-                   uint32_t maxFramesInFlight,const std::vector<PerInstanceData> &instanceData)
-    : device(device), model(model), ifUseInstancedRendering(instanceData.size() > 0), numInstances(instanceData.size() > 0 ? instanceData.size() : 1) {
+Pipeline::Pipeline(const std::string &vertShaderPath,
+                   const std::string &fragShaderPath)
+    : vertShaderPath(vertShaderPath), fragShaderPath(fragShaderPath) {}
 
-    // Create images from model textures
-    const auto &modelTextures = model.getTextures();
-    images.reserve(modelTextures.size());
-    for (const auto &texture : modelTextures) {
-        auto image = std::make_unique<Image>(*device);
-        images.push_back(std::move(image));
-    }
-
-    createUniformBuffers(maxFramesInFlight);
-    createVertexBuffer();
-    createIndexBuffer();
-
-    if (ifUseInstancedRendering) {
-        createInstanceDataBuffer(instanceData);
-    }
-
-    // Only create texture resources if we have textures
-    if (!model.getTextures().empty()) {
-        createTextureResources();
-    }
-
-    descriptorLayout.init(*device->getDevice());
-    descriptorPool.init(*device->getDevice(), maxFramesInFlight);
-    descriptorSet.init(*device->getDevice(), descriptorPool, descriptorLayout,
-                       maxFramesInFlight);
-
-    // Always update uniform buffer descriptors
-    for (size_t i = 0; i < maxFramesInFlight; i++) {
-        descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
-                                       sizeof(UniformBufferObject));
-    }
-
-    // Only update texture descriptors if we have textures
-    if (!images.empty()) {
-        std::vector<VkImageView> imageViews;
-        std::vector<VkImageLayout> imageLayouts;
-
-        imageViews.reserve(images.size());
-        imageLayouts.reserve(images.size());
-
-        for (const auto &image : images) {
-            imageViews.push_back(image->getVkImageView());
-            imageLayouts.push_back(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-        }
-
-        descriptorSet.updateImageInfos(1, imageViews, imageLayouts,
-                                       textureSampler);
-    }
+void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
+                    uint32_t maxFramesInFlight) {
+    this->device = device;
 
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
@@ -90,19 +41,22 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
 
     // Vertex Input State
     size_t numBindings = 1;
-    std::vector<VkVertexInputBindingDescription> bindingDescription = {Vertex::getBindingDescription()};
+    std::vector<VkVertexInputBindingDescription> bindingDescription = {
+        Vertex::getBindingDescription()};
 
     auto vertexAttributes = Vertex::getAttributeDescriptions();
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = {vertexAttributes.begin(), vertexAttributes.end()};
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions = {
+        vertexAttributes.begin(), vertexAttributes.end()};
 
-    if (ifUseInstancedRendering) {
-        bindingDescription.emplace_back(PerInstanceData::getBindingDescription());
+    bindingDescription.emplace_back(PerInstanceData::getBindingDescription());
 
-        auto instanceVertexDataAttributes = PerInstanceData::getAttributeDescriptions();
-        attributeDescriptions.insert(attributeDescriptions.end(), instanceVertexDataAttributes.begin(), instanceVertexDataAttributes.end());
+    auto instanceVertexDataAttributes =
+        PerInstanceData::getAttributeDescriptions();
+    attributeDescriptions.insert(attributeDescriptions.end(),
+                                 instanceVertexDataAttributes.begin(),
+                                 instanceVertexDataAttributes.end());
 
-        numBindings = 2;
-    }
+    numBindings = 2;
 
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType =
@@ -189,7 +143,7 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    auto layout = descriptorLayout.getLayout();
+    auto layout = device->getDescriptorLayout().getLayout();
     pipelineLayoutInfo.pSetLayouts = &layout;
     if (vkCreatePipelineLayout(*device->getDevice(), &pipelineLayoutInfo,
                                nullptr, &pipelineLayout) != VK_SUCCESS) {
@@ -230,69 +184,6 @@ Pipeline::Pipeline(Device *device, const std::string &vertShaderPath,
     vkDestroyShaderModule(*device->getDevice(), vertShaderModule, nullptr);
 }
 
-void Pipeline::createTextureResources() {
-    // Skip if no textures
-    if (images.empty()) {
-        return;
-    }
-
-    const auto &modelTextures = model.getTextures();
-    for (size_t i = 0; i < images.size(); i++) {
-        const auto &textureData = modelTextures[i];
-
-        // Create image from texture data in memory
-        images[i]->createTextureImageFromMemory(
-            textureData.pixels.data(), textureData.width, textureData.height,
-            textureData.channels);
-
-        images[i]->createTextureImageView();
-    }
-    createTextureSampler();
-}
-
-void Pipeline::createTextureSampler() {
-    VkPhysicalDeviceProperties properties{};
-    vkGetPhysicalDeviceProperties(*device->getPhysicalDevice(), &properties);
-
-    VkSamplerCreateInfo samplerInfo{};
-    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-    samplerInfo.magFilter = VK_FILTER_LINEAR;
-    samplerInfo.minFilter = VK_FILTER_LINEAR;
-    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-    samplerInfo.anisotropyEnable = VK_TRUE;
-    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
-    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-    samplerInfo.unnormalizedCoordinates = VK_FALSE;
-    samplerInfo.compareEnable = VK_FALSE;
-    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
-    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-    if (vkCreateSampler(*device->getDevice(), &samplerInfo, nullptr,
-                        &textureSampler) != VK_SUCCESS) {
-        throw std::runtime_error("failed to create texture sampler!");
-    }
-}
-
-void Pipeline::createUniformBuffers(uint32_t maxFramesInFlight) {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-
-    uniformBuffers.resize(maxFramesInFlight);
-    uniformBuffersMapped.resize(maxFramesInFlight);
-
-    for (size_t i = 0; i < maxFramesInFlight; i++) {
-        uniformBuffers[i] = std::make_unique<Buffer>(
-            device, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_MEMORY_USAGE_AUTO,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-        uniformBuffers[i]->map(&uniformBuffersMapped[i]);
-    }
-}
-
 void Pipeline::cleanup() {
     if (graphicsPipeline != VK_NULL_HANDLE) {
         vkDestroyPipeline(*device->getDevice(), graphicsPipeline, nullptr);
@@ -303,7 +194,6 @@ void Pipeline::cleanup() {
         pipelineLayout = VK_NULL_HANDLE;
     }
 
-    vkDestroySampler(*device->getDevice(), textureSampler, nullptr);
     // TODO: finish cleanup
 }
 
@@ -322,19 +212,6 @@ VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code) {
     return shaderModule;
 }
 
-void Pipeline::updateUniformBuffer(uint32_t currentFrame, Camera &camera,
-                                   const VkExtent2D &swapChainExtent) const {
-    UniformBufferObject ubo{};
-    ubo.model = modelMatrix;
-    ubo.view = camera.GetViewMatrix();
-    ubo.proj = glm::perspective(
-        glm::radians(camera.getZoom()),
-        swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-    ubo.proj[1][1] *= -1;
-
-    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
-}
-
 std::vector<char> Pipeline::readFile(const std::string &filename) {
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -350,79 +227,4 @@ std::vector<char> Pipeline::readFile(const std::string &filename) {
     file.close();
 
     return buffer;
-}
-
-void Pipeline::createVertexBuffer() {
-    auto vertices = model.getVertices();
-    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
-
-    Buffer stagingBuffer(
-        device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        VMA_MEMORY_USAGE_AUTO,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-    void *data;
-    stagingBuffer.map(&data);
-    memcpy(data, vertices.data(), (size_t)bufferSize);
-    stagingBuffer.unmap();
-
-    vertexBuffer = std::make_unique<Buffer>(
-        device, bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-
-    vertexBuffer->copyFrom(stagingBuffer, bufferSize);
-}
-
-void Pipeline::createIndexBuffer() {
-    auto indices = model.getIndices();
-    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
-
-    // Create staging buffer
-    Buffer stagingBuffer(
-        device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        VMA_MEMORY_USAGE_AUTO,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-    // Copy index data to staging buffer
-    void *data;
-    stagingBuffer.map(&data);
-    memcpy(data, indices.data(), (size_t)bufferSize);
-    stagingBuffer.unmap();
-
-    // Create device local index buffer
-    indexBuffer = std::make_unique<Buffer>(device, bufferSize,
-                                           VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                               VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-                                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    // Copy from staging buffer to index buffer
-    indexBuffer->copyFrom(stagingBuffer, bufferSize);
-}
-
-void Pipeline::createInstanceDataBuffer(const std::vector<PerInstanceData> &instanceData) {
-    VkDeviceSize bufferSize = sizeof(PerInstanceData) * instanceData.size();
-
-    Buffer stagingBuffer(
-        device, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-            VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-        VMA_MEMORY_USAGE_AUTO,
-        VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-    void *data;
-    stagingBuffer.map(&data);
-    memcpy(data, instanceData.data(), (size_t)bufferSize);
-    stagingBuffer.unmap();
-
-    instanceDataBuffer = std::make_unique<Buffer>(
-        device, bufferSize,
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,VMA_MEMORY_USAGE_AUTO_PREFER_DEVICE);
-
-    instanceDataBuffer->copyFrom(stagingBuffer, bufferSize);
 }

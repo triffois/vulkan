@@ -1,0 +1,56 @@
+#pragma once
+
+#include "DescriptorLayout.h"
+#include "Device.h"
+#include "Image.h"
+#include "TextureData.h"
+#include <memory>
+#include <vector>
+#include <vulkan/vulkan.h>
+
+using TextureID = int32_t;
+
+class TextureManager {
+  public:
+    TextureManager() = default;
+    ~TextureManager() = default;
+
+    TextureManager(const TextureManager &) = delete;
+    TextureManager &operator=(const TextureManager &) = delete;
+
+    TextureID registerTexture(const TextureData &textureData);
+
+    VkSampler getSampler() const { return textureSampler; }
+    VkImageView getTextureArrayView() const {
+        return textureImage->getVkImageView();
+    }
+    VkDescriptorSetLayout getDescriptorSetLayout() const {
+        return descriptorLayout.getLayout();
+    }
+
+    void init(Device *device);
+    void prepareResources();
+    void cleanup();
+
+  private:
+    void createTextureArray();
+    void updateTextureArray();
+    void createSampler();
+    void createDescriptorLayout();
+
+    Device *device = nullptr;
+    std::vector<TextureData> textures;
+
+    std::unique_ptr<Image> textureImage;
+    VkSampler textureSampler = VK_NULL_HANDLE;
+
+    // Huhh why is this here I don't remember writing this
+    // TODO: Remove ???
+    bool needsUpdate = false;
+
+    static constexpr uint32_t MAX_TEXTURE_COUNT = 256;
+    static constexpr uint32_t MAX_TEXTURE_DIMENSION = 1024;
+
+    DescriptorLayout descriptorLayout;
+    bool resourcesPrepared = false;
+};

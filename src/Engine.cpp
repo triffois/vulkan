@@ -37,7 +37,7 @@ Render Engine::startRender() {
     peripheralsManager.updatePeripheralsOnFrame();
     processKeyboardInput();
 
-    return Render(&appDevice, swapChain.get(),
+    return Render(&globalResources, swapChain.get(),
                   commandBuffers[currentFrame]->getCommandBuffer(), imageIndex,
                   currentFrame, imageAvailableSemaphores[currentFrame],
                   renderFinishedSemaphores[currentFrame],
@@ -47,7 +47,7 @@ Render Engine::startRender() {
 void Engine::finishRender(Render &render) {
     bool needsRecreation = render.finish();
 
-    //TODO: fix semaphores staying signaled when window is resized
+    // TODO: fix semaphores staying signaled when window is resized
     if (needsRecreation || framebufferResized) {
         framebufferResized = false;
         swapChain->handleResizing();
@@ -116,9 +116,13 @@ void Engine::initVulkan() {
 
     createCommandBuffers();
     createSyncObjects();
+
+    // Initialize global resources
+    globalResources.init(&appDevice);
 }
 
 void Engine::cleanup() {
+    globalResources.cleanup();
     swapChain->cleanup();
 
     // vkDestroyImage(device, textureImage, nullptr);
@@ -174,18 +178,13 @@ void Engine::createSyncObjects() {
     }
 }
 
-Pipeline Engine::createPipeline(const std::string &vertShaderPath,
-                                const std::string &fragShaderPath,
-                                const Model &model) {
-    return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
-                    swapChain->getImageFormat(), swapChain->findDepthFormat(),
-                    model, MAX_FRAMES_IN_FLIGHT);
+PipelineID Engine::createPipeline(const std::string &vertShaderPath,
+                                  const std::string &fragShaderPath) {
+    auto &manager = globalResources.getPipelineManager();
+    return manager.createPipeline(vertShaderPath, fragShaderPath);
 }
 
-Pipeline Engine::createPipelineInstanced(const std::string &vertShaderPath, const std::string &fragShaderPath,
-    const Model &model, const std::vector<PerInstanceData> &instanceData) {
-
-    return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
-                    swapChain->getImageFormat(), swapChain->findDepthFormat(),
-                    model, MAX_FRAMES_IN_FLIGHT, instanceData);
+void Engine::prepareResources() {
+    globalResources.prepareResources(swapChain->getImageFormat(),
+                                     swapChain->findDepthFormat());
 }
