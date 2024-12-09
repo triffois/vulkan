@@ -1,7 +1,7 @@
 #include "TextureManager.h"
 #include <stdexcept>
 
-void TextureManager::init(Device *device) { this->device = device; }
+TextureManager::TextureManager(Device *device) : device(device) {}
 
 TextureID TextureManager::registerTexture(const TextureData &textureData) {
     if (resourcesPrepared) {

@@ -2,6 +2,7 @@
 
 #include "GlobalResources.h"
 #include "Model.h"
+#include "TextureManager.h"
 #include "tiny_gltf.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -49,9 +50,11 @@ class ModelLoader {
     static void
     createRenderBatches(const std::map<int32_t, ProcessedPrimitive> &primitives,
                         const tinygltf::Model &source,
-                        GlobalResources &resources, Model &destination);
+                        GlobalResources &resources, Model &destination,
+                        TextureManager &textureManager);
 
   public:
     static Model loadFromGLTF(const std::string &filename,
-                              GlobalResources &resources);
+                              GlobalResources &resources,
+                              TextureManager &textureManager);
 };

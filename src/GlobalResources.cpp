@@ -9,7 +9,6 @@ void GlobalResources::init(Device *device, AppWindow *appWindow) {
 
     pipelineManager.init(device);
     meshManager.init(device);
-    textureManager.init(device);
 }
 
 void GlobalResources::cleanup() {

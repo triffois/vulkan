@@ -10,13 +10,10 @@
 
 template <typename T> class UniformAttachment : public IAttachment {
   public:
-    UniformAttachment(GlobalResources *globalResources,
-                      std::function<void(T &)> updator,
+    UniformAttachment(Device *device, std::function<void(T &)> updator,
                       uint32_t bindingLocation)
-        : globalResources(globalResources), updator(updator),
-          bindingLocation(bindingLocation) {
-        auto maxFramesInFlight =
-            globalResources->getDevice()->getMaxFramesInFlight();
+        : updator(updator), bindingLocation(bindingLocation) {
+        auto maxFramesInFlight = device->getMaxFramesInFlight();
 
         VkDeviceSize bufferSize = sizeof(T);
         uniformBuffers.resize(maxFramesInFlight);
@@ -24,8 +21,7 @@ template <typename T> class UniformAttachment : public IAttachment {
 
         for (size_t i = 0; i < maxFramesInFlight; i++) {
             uniformBuffers[i] = std::make_unique<Buffer>(
-                globalResources->getDevice(), bufferSize,
-                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                device, bufferSize, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
                 VMA_MEMORY_USAGE_AUTO,
@@ -63,7 +59,6 @@ template <typename T> class UniformAttachment : public IAttachment {
     }
 
   private:
-    GlobalResources *globalResources;
     uint32_t bindingLocation;
     std::function<void(T &)> updator;
 

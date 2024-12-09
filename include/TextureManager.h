@@ -3,6 +3,7 @@
 #include "Device.h"
 #include "TextureAttachment.h"
 #include "TextureData.h"
+#include "UniformAttachment.h"
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -10,15 +11,13 @@ using TextureID = int32_t;
 
 class TextureManager {
   public:
-    TextureManager() = default;
+    TextureManager(Device *device);
     ~TextureManager() = default;
 
     TextureManager(const TextureManager &) = delete;
     TextureManager &operator=(const TextureManager &) = delete;
 
     TextureID registerTexture(const TextureData &textureData);
-
-    void init(Device *device);
 
     std::vector<glm::vec4> getTextureResolutions() const {
         std::vector<glm::vec4> resolutions;

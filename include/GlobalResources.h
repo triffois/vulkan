@@ -4,7 +4,6 @@
 #include "MeshManager.h"
 #include "PipelineManager.h"
 #include "SwapChain.h"
-#include "TextureManager.h"
 
 class GlobalResources {
   public:
@@ -18,7 +17,6 @@ class GlobalResources {
     SwapChain &getSwapChain() { return *swapChain; }
     PipelineManager &getPipelineManager() { return pipelineManager; }
     MeshManager &getMeshManager() { return meshManager; }
-    TextureManager &getTextureManager() { return textureManager; }
     Device *getDevice() { return device; }
 
   private:
@@ -26,5 +24,4 @@ class GlobalResources {
     std::unique_ptr<SwapChain> swapChain;
     PipelineManager pipelineManager;
     MeshManager meshManager;
-    TextureManager textureManager;
 };

@@ -2,6 +2,7 @@
 
 #include "Model.h"
 #include "Pipeline.h"
+#include "TextureManager.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -38,6 +39,7 @@ class Engine {
     GlobalResources &getGlobalResources() { return globalResources; }
     Device *getDevice() { return &appDevice; }
 
+    TextureManager createTextureManager();
     Renderable shaded(Model &model, std::string vertexShaderPath,
                       std::string fragmentShaderPath);
 

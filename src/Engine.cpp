@@ -173,6 +173,10 @@ void Engine::createSyncObjects() {
     }
 }
 
+TextureManager Engine::createTextureManager() {
+    return TextureManager(&appDevice);
+}
+
 Renderable Engine::shaded(Model &model, std::string vertexShaderPath,
                           std::string fragmentShaderPath) {
     return Renderable(&globalResources, model, vertexShaderPath,

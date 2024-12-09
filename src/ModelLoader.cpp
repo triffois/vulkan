@@ -265,7 +265,8 @@ ModelLoader::processTextures(const tinygltf::Model &model,
 }
 
 Model ModelLoader::loadFromGLTF(const std::string &filename,
-                                GlobalResources &resources) {
+                                GlobalResources &resources,
+                                TextureManager &textureManager) {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF loader;
     std::string err, warn;
@@ -303,7 +304,8 @@ Model ModelLoader::loadFromGLTF(const std::string &filename,
     }
 
     // Create render batches from processed primitives
-    createRenderBatches(materialPrimitives, gltfModel, resources, model);
+    createRenderBatches(materialPrimitives, gltfModel, resources, model,
+                        textureManager);
 
     return model;
 }
@@ -311,10 +313,9 @@ Model ModelLoader::loadFromGLTF(const std::string &filename,
 void ModelLoader::createRenderBatches(
     const std::map<int32_t, ProcessedPrimitive> &primitives,
     const tinygltf::Model &source, GlobalResources &resources,
-    Model &destination) {
+    Model &destination, TextureManager &textureManager) {
 
     auto &meshManager = resources.getMeshManager();
-    auto &textureManager = resources.getTextureManager();
 
     for (const auto &[materialIndex, primitive] : primitives) {
         // Register mesh with MeshManager

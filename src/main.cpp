@@ -1,3 +1,4 @@
+#include "TextureManager.h"
 #include "UniformAttachment.h"
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -16,12 +17,14 @@ int main(int argc, char *argv[]) {
     try {
         Engine engine;
 
+        TextureManager textures(engine.getDevice());
+
         // Load the model into a scene
-        auto model =
-            ModelLoader::loadFromGLTF(argv[1], engine.getGlobalResources());
+        auto model = ModelLoader::loadFromGLTF(
+            argv[1], engine.getGlobalResources(), textures);
 
         // Create the uniform attachment with a lambda for updates
-        auto uniformUpdator = [&engine](UniformBufferObject &ubo) {
+        auto uniformUpdator = [&engine, &textures](UniformBufferObject &ubo) {
             auto camera = engine.getCamera();
             auto &swapChain = engine.getGlobalResources().getSwapChain();
             VkExtent2D swapChainExtent = swapChain.getExtent();
@@ -34,9 +37,7 @@ int main(int argc, char *argv[]) {
             ubo.proj[1][1] *= -1;
 
             // Get texture resolutions and fill the array
-            auto resolutions = engine.getGlobalResources()
-                                   .getTextureManager()
-                                   .getTextureResolutions();
+            auto resolutions = textures.getTextureResolutions();
 
             // Fill remaining slots with zero
             for (size_t i = resolutions.size(); i < 256; i++) {
@@ -48,12 +49,10 @@ int main(int argc, char *argv[]) {
         };
 
         UniformAttachment<UniformBufferObject> uniformAttachment(
-            &engine.getGlobalResources(), uniformUpdator, 0);
+            engine.getDevice(), uniformUpdator, 0);
 
         // TODO nonglobal texture managers - this one is certainly possible
-        TextureAttachment textureAttachment = engine.getGlobalResources()
-                                                  .getTextureManager()
-                                                  .getTextureAttachment();
+        TextureAttachment textureAttachment = textures.getTextureAttachment();
 
         model.bind(uniformAttachment);
         model.bind(textureAttachment);
