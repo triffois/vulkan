@@ -1,6 +1,6 @@
+#include "SceneLighting.h"
 #include "TextureManager.h"
 #include "UniformAttachment.h"
-#include "SceneLighting.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
@@ -12,7 +12,7 @@
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <path_to_gltf_file>"
-                << std::endl;
+                  << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -34,31 +34,16 @@ int main(int argc, char *argv[]) {
             ubo.view = camera->GetViewMatrix();
             ubo.proj = glm::perspective(glm::radians(camera->getZoom()),
                                         swapChainExtent.width /
-                                        (float) swapChainExtent.height,
+                                            (float)swapChainExtent.height,
                                         0.1f, 1000.0f);
             ubo.proj[1][1] *= -1;
-        };
-
-        auto resolutionUpdator = [&textures](glm::vec4 ubo[256]) {
-            // Get texture resolutions and fill the array
-            auto resolutions = textures.getTextureResolutions();
-
-            // Fill remaining slots with zero
-            for (size_t i = resolutions.size(); i < 256; i++) {
-                ubo[i] = glm::vec4(0.0f);
-            }
-            for (size_t i = 0; i < resolutions.size(); i++) {
-                ubo[i] = resolutions[i];
-            }
         };
 
         UniformAttachment<UniformBufferObject> uniformAttachment(
             engine.getDevice(), uniformUpdator, 0);
 
-        UniformAttachment<glm::vec4[256]> resolutionsAttachment(
-            engine.getDevice(), resolutionUpdator, 1);
-
-        TextureAttachment textureAttachment = textures.getTextureAttachment(2);
+        auto resolutionsAttachment = textures.getResolutionsAttachment<256>(1);
+        auto textureAttachment = textures.getTextureAttachment(2);
 
         SceneLighting staticLighting{*engine.getDevice(), 3};
 
@@ -68,7 +53,7 @@ int main(int argc, char *argv[]) {
         model.bind(staticLighting.getLightingBuffer());
 
         auto renderable =
-                engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");
+            engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");
 
         // Main render loop
         while (engine.running()) {

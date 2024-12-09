@@ -2,7 +2,6 @@
 
 #include "Buffer.h"
 #include "DescriptorSet.h"
-#include "GlobalResources.h"
 #include "IAttachment.h"
 #include <functional>
 #include <memory>
@@ -34,9 +33,9 @@ template <typename T> class UniformAttachment : public IAttachment {
     ~UniformAttachment() override = default;
 
     void update(uint32_t currentFrame) override {
-        T ubo{};
-        updator(ubo);
-        memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(T));
+        updator(ubos[currentFrame]);
+        memcpy(uniformBuffersMapped[currentFrame], &ubos[currentFrame],
+               sizeof(T));
     }
 
     void updateDescriptorSet(uint32_t maxFramesInFlight,
@@ -66,6 +65,7 @@ template <typename T> class UniformAttachment : public IAttachment {
   private:
     uint32_t bindingLocation;
     std::function<void(T &)> updator;
+    std::vector<T> ubos = std::vector<T>(3);
 
     // Uniform buffer resources
     std::vector<std::unique_ptr<Buffer>> uniformBuffers;

@@ -1,14 +1,11 @@
 #pragma once
 
+#include "Device.h"
 #include "UniformAttachment.h"
 #include "commonstructs.h"
-#include "Device.h"
-
-#include <vector>
-#include <array>
 
 class SceneLighting {
-public:
+  public:
     SceneLighting(Device &deviceToUse, size_t attachmentBindingIndex);
 
     SceneLighting(const SceneLighting &other) = delete;
@@ -21,6 +18,6 @@ public:
 
     UniformAttachment<SimpleLightSource[3]> &getLightingBuffer();
 
-private:
+  private:
     UniformAttachment<SimpleLightSource[3]> lightingAttachment;
 };
