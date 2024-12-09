@@ -1,5 +1,6 @@
 #pragma once
 
+#include "DescriptorLayout.h"
 #include "Device.h"
 #include <string>
 #include <vector>
@@ -17,6 +18,7 @@ class Pipeline {
 
     VkPipeline getPipeline() const { return graphicsPipeline; }
     VkPipelineLayout getLayout() const { return pipelineLayout; }
+    DescriptorLayout &getDescriptorLayout() { return descriptorLayout; }
 
     void prepareForRendering() const;
 
@@ -24,6 +26,8 @@ class Pipeline {
     Device *device;
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
+
+    DescriptorLayout descriptorLayout;
 
     std::string vertShaderPath;
     std::string fragShaderPath;

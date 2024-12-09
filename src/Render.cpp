@@ -62,7 +62,7 @@ void Render::recordRenderingCommands(RenderPass &pass) {
 
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       pipeline.getPipeline());
-    pass.updateUniformBuffer(currentFrame, camera, swapChain->getExtent());
+    pass.update(currentFrame, camera, swapChain->getExtent());
 
     VkViewport viewport{};
     viewport.x = 0.0f;

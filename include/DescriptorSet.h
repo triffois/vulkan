@@ -10,7 +10,7 @@ class DescriptorSet {
     void init(VkDevice device, const DescriptorPool &pool,
               const DescriptorLayout &layout, uint32_t count);
 
-    void updateBufferInfo(uint32_t binding, VkBuffer buffer,
+    void updateBufferInfo(size_t frameIndex, uint32_t binding, VkBuffer buffer,
                           VkDeviceSize offset, VkDeviceSize range);
 
     void updateImageInfos(uint32_t startBinding,

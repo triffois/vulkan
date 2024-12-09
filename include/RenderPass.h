@@ -1,13 +1,13 @@
 #pragma once
 
 #include "Buffer.h"
-#include "Camera.h"
 #include "DescriptorPool.h"
 #include "DescriptorSet.h"
 #include "GlobalResources.h"
 #include "MeshManager.h"
 #include "PipelineManager.h"
 #include "RenderBatch.h"
+#include "UniformAttachment.h"
 #include <memory>
 
 class RenderPass {
@@ -33,23 +33,20 @@ class RenderPass {
         return descriptorSet.getSet(frameIndex);
     }
 
-    void updateUniformBuffer(uint32_t currentFrame, const Camera &camera,
-                             const VkExtent2D &swapChainExtent);
+    void update(uint32_t currentFrame, const Camera &camera,
+                const VkExtent2D &swapChainExtent);
 
   private:
     void createInstanceBuffer(const RenderBatch &batch);
-    void createUniformBuffers(uint32_t maxFramesInFlight);
     void updateDescriptors(uint32_t maxFramesInFlight);
+
+    UniformAttachment uniformAttachment;
 
     GlobalResources *globalResources;
     MeshID meshId;
     PipelineID pipelineId;
     std::unique_ptr<Buffer> instanceBuffer;
     uint32_t instanceCount;
-
-    // Uniform buffer resources
-    std::vector<std::unique_ptr<Buffer>> uniformBuffers;
-    std::vector<void *> uniformBuffersMapped;
 
     // Descriptor resources
     DescriptorPool descriptorPool;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "DescriptorLayout.h"
 #include "Device.h"
 #include "Image.h"
 #include "TextureData.h"
@@ -24,10 +23,6 @@ class TextureManager {
     VkImageView getTextureArrayView() const {
         return textureImage->getVkImageView();
     }
-    VkDescriptorSetLayout getDescriptorSetLayout() const {
-        return descriptorLayout.getLayout();
-    }
-
     void init(Device *device);
     void prepareResources();
     void cleanup();
@@ -50,7 +45,6 @@ class TextureManager {
     void createTextureArray();
     void updateTextureArray();
     void createSampler();
-    void createDescriptorLayout();
 
     Device *device = nullptr;
     std::vector<TextureData> textures;
@@ -61,6 +55,5 @@ class TextureManager {
     static constexpr uint32_t MAX_TEXTURE_COUNT = 256;
     static constexpr uint32_t MAX_TEXTURE_DIMENSION = 1024;
 
-    DescriptorLayout descriptorLayout;
     bool resourcesPrepared = false;
 };

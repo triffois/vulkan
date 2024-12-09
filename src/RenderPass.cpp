@@ -6,14 +6,16 @@
 RenderPass::RenderPass(GlobalResources *globalResources,
                        const RenderBatch &batch, uint32_t maxFramesInFlight)
     : globalResources(globalResources), meshId(batch.meshId),
-      pipelineId(batch.pipelineId) {
+      pipelineId(batch.pipelineId), uniformAttachment(globalResources) {
 
     createInstanceBuffer(batch);
-    createUniformBuffers(maxFramesInFlight);
+    uniformAttachment.init(maxFramesInFlight);
     auto device = globalResources->getDevice();
+    auto pipeline =
+        globalResources->getPipelineManager().getPipeline(pipelineId);
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool,
-                       device->getDescriptorLayout(), maxFramesInFlight);
+                       pipeline.getDescriptorLayout(), maxFramesInFlight);
     updateDescriptors(maxFramesInFlight);
 }
 
@@ -48,30 +50,9 @@ void RenderPass::createInstanceBuffer(const RenderBatch &batch) {
     instanceBuffer->copyFrom(stagingBuffer, bufferSize);
 }
 
-void RenderPass::createUniformBuffers(uint32_t maxFramesInFlight) {
-    VkDeviceSize bufferSize = sizeof(UniformBufferObject);
-    uniformBuffers.resize(maxFramesInFlight);
-    uniformBuffersMapped.resize(maxFramesInFlight);
-
-    for (size_t i = 0; i < maxFramesInFlight; i++) {
-        uniformBuffers[i] = std::make_unique<Buffer>(
-            globalResources->getDevice(), bufferSize,
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-            VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
-            VMA_MEMORY_USAGE_AUTO,
-            VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT);
-
-        uniformBuffers[i]->map(&uniformBuffersMapped[i]);
-    }
-}
-
 void RenderPass::updateDescriptors(uint32_t maxFramesInFlight) {
     // Update uniform buffer descriptors
-    for (size_t i = 0; i < maxFramesInFlight; i++) {
-        descriptorSet.updateBufferInfo(0, uniformBuffers[i]->getBuffer(), 0,
-                                       sizeof(UniformBufferObject));
-    }
+    uniformAttachment.updateDescriptorSet(maxFramesInFlight, descriptorSet);
 
     // Update texture descriptors
     descriptorSet.updateImageInfo(
@@ -80,27 +61,7 @@ void RenderPass::updateDescriptors(uint32_t maxFramesInFlight) {
         globalResources->getTextureManager().getSampler());
 }
 
-void RenderPass::updateUniformBuffer(uint32_t currentFrame,
-                                     const Camera &camera,
-                                     const VkExtent2D &swapChainExtent) {
-    UniformBufferObject ubo{};
-    ubo.view = camera.GetViewMatrix();
-    ubo.proj = glm::perspective(
-        glm::radians(camera.getZoom()),
-        swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
-    ubo.proj[1][1] *= -1;
-
-    // Get texture resolutions and fill the array
-    auto resolutions =
-        globalResources->getTextureManager().getTextureResolutions();
-
-    // Fill remaining slots with zero
-    for (size_t i = resolutions.size(); i < 256; i++) {
-        ubo.textureResolutions[i] = glm::vec4(0.0f);
-    }
-    for (size_t i = 0; i < resolutions.size(); i++) {
-        ubo.textureResolutions[i] = resolutions[i];
-    }
-
-    memcpy(uniformBuffersMapped[currentFrame], &ubo, sizeof(ubo));
+void RenderPass::update(uint32_t currentFrame, const Camera &camera,
+                        const VkExtent2D &swapChainExtent) {
+    uniformAttachment.update(currentFrame, camera, swapChainExtent);
 }

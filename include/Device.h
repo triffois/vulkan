@@ -5,7 +5,6 @@
 #include "AppInstance.h"
 #include "AppWindow.h"
 #include "CommandPool.h"
-#include "DescriptorLayout.h"
 #include "DeviceMemoryAllocation.h"
 #include "INeedCleanUp.h"
 #include "commonstructs.h"
@@ -64,9 +63,6 @@ class Device : public INeedCleanUp {
     VkResult unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const;
     CommandPool *getGraphicsCommandPool() { return graphicsCommandPool; }
 
-    DescriptorLayout getDescriptorLayout() const { return descriptorLayout; }
-    void createDescriptorLayout();
-
     uint32_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
 
   private:
@@ -94,8 +90,6 @@ class Device : public INeedCleanUp {
     CommandPool *graphicsCommandPool;
 
     std::list<DeviceMemoryAllocation> allocations;
-
-    DescriptorLayout descriptorLayout;
 
     static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 };

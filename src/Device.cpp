@@ -17,7 +17,6 @@ void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
     pickPhysicalDevice();
     createLogicalDevice();
     createAllocator();
-    createDescriptorLayout();
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     graphicsCommandPool =
@@ -391,5 +390,3 @@ uint32_t Device::findMemoryType(uint32_t typeFilter,
 
     throw std::runtime_error("Failed to find suitable memory type!");
 }
-
-void Device::createDescriptorLayout() { descriptorLayout.init(device); }

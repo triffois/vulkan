@@ -1,4 +1,5 @@
 #include "Pipeline.h"
+#include "DescriptorLayout.h"
 #include "InstanceData.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
@@ -16,6 +17,8 @@ Pipeline::Pipeline(const std::string &vertShaderPath,
 void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
                     uint32_t maxFramesInFlight) {
     this->device = device;
+
+    descriptorLayout.init(*device->getDevice());
 
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
@@ -144,7 +147,7 @@ void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
-    auto layout = device->getDescriptorLayout().getLayout();
+    auto layout = descriptorLayout.getLayout();
     pipelineLayoutInfo.pSetLayouts = &layout;
     if (vkCreatePipelineLayout(*device->getDevice(), &pipelineLayoutInfo,
                                nullptr, &pipelineLayout) != VK_SUCCESS) {
