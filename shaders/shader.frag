@@ -20,11 +20,17 @@ struct SimpleLight {
     int lightRange;
 };
 
+struct DirectionalLightSource {
+    vec4 lightDirection;
+    vec4 lightColor;
+};
+
 const int nSimpleLights = 3;
-layout(set = 0, binding = 3) uniform lights {
+layout(set = 0, binding = 3) uniform SceneLightData {
     SimpleLight lights[nSimpleLights];
+    DirectionalLightSource dirLight;
 }
-simpleLights;
+sceneLights;
 
 // fragment shader input
 layout(location = 0) in vec3 fragColor;
@@ -56,33 +62,38 @@ void main() {
     float distanceBase = 0.9;
 
     float ambientAmount = 0.35f;
-    float specularAmount = 0.45f;
+    float specularAmount = 0.6f;
 
     for (int i = 0; i < nSimpleLights; ++i) {
-        vec3 LightposVec3 = simpleLights.lights[i].lightPos.xyz;
+        vec3 LightposVec3 = sceneLights.lights[i].lightPos.xyz;
 
         vec3 lightDir = LightposVec3 - vertexPos.xyz;
 
         float intensityFaint =
         pow(distanceBase,
-        length(lightDir) / simpleLights.lights[i].lightRange) *
-        simpleLights.lights[i].lightIntensity;
+        length(lightDir) / sceneLights.lights[i].lightRange) *
+        sceneLights.lights[i].lightIntensity;
 
         vec3 lightDirNorm = normalize(lightDir);
 
         // compute diffuse fraction
         float diffuse =
-        max(dot(vertNormal, lightDirNorm), 0.0) * intensityFaint +
-        ambientAmount;
+        max(dot(vertNormal, lightDirNorm), 0.0) * intensityFaint;
 
         // compute specular fraction
         vec3 halfway = normalize(lightDirNorm + viewDirVec3);
         float specular = pow(max(dot(vertNormal, halfway), 0.0f), 16) *
         specularAmount * intensityFaint;
 
-        outColor += (specular + diffuse) * vec4(simpleLights.lights[i].lightColor.xyz, 0.0);
+        outColor += (specular + diffuse) * vec4(sceneLights.lights[i].lightColor.xyz, 0.0);
     }
 
+    //directional light
+    vec4 directionalDiffuse =
+    (max(dot(vertNormal, normalize(sceneLights.dirLight.lightDirection).xyz), 0.0) + ambientAmount) * vec4(sceneLights.dirLight.lightColor.xyz, 0.0);
+    outColor += directionalDiffuse;
+
     outColor *= textureColor;
+    outColor.w = textureColor.w;
 }
 
