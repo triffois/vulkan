@@ -20,9 +20,35 @@ int main(int argc, char *argv[]) {
         auto model =
             ModelLoader::loadFromGLTF(argv[1], engine.getGlobalResources());
 
-        // Bind all the resources
-        UniformAttachment uniformAttachment(&engine.getGlobalResources(),
-                                            *engine.getCamera(), 0);
+        // Create the uniform attachment with a lambda for updates
+        auto uniformUpdator = [&engine](UniformBufferObject &ubo) {
+            auto camera = engine.getCamera();
+            auto &swapChain = engine.getGlobalResources().getSwapChain();
+            VkExtent2D swapChainExtent = swapChain.getExtent();
+
+            ubo.view = camera->GetViewMatrix();
+            ubo.proj = glm::perspective(glm::radians(camera->getZoom()),
+                                        swapChainExtent.width /
+                                            (float)swapChainExtent.height,
+                                        0.1f, 1000.0f);
+            ubo.proj[1][1] *= -1;
+
+            // Get texture resolutions and fill the array
+            auto resolutions = engine.getGlobalResources()
+                                   .getTextureManager()
+                                   .getTextureResolutions();
+
+            // Fill remaining slots with zero
+            for (size_t i = resolutions.size(); i < 256; i++) {
+                ubo.textureResolutions[i] = glm::vec4(0.0f);
+            }
+            for (size_t i = 0; i < resolutions.size(); i++) {
+                ubo.textureResolutions[i] = resolutions[i];
+            }
+        };
+
+        UniformAttachment<UniformBufferObject> uniformAttachment(
+            &engine.getGlobalResources(), uniformUpdator, 0);
 
         // TODO nonglobal texture managers - this one is certainly possible
         TextureAttachment textureAttachment = engine.getGlobalResources()
