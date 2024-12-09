@@ -4,6 +4,12 @@
 #include "UniformAttachment.h"
 #include "commonstructs.h"
 
+#define NUM_FRAG_SHADER_LIGHTS 3
+
+struct LightsArray {
+  SimpleLightSource lights[NUM_FRAG_SHADER_LIGHTS];
+};
+
 class SceneLighting {
   public:
     SceneLighting(Device &deviceToUse, size_t attachmentBindingIndex);
@@ -16,8 +22,8 @@ class SceneLighting {
 
     const SceneLighting &operator=(SceneLighting &&other) = delete;
 
-    UniformAttachment<SimpleLightSource[3]> &getLightingBuffer();
+    UniformAttachment<LightsArray> &getLightingBuffer();
 
   private:
-    UniformAttachment<SimpleLightSource[3]> lightingAttachment;
+    UniformAttachment<LightsArray> lightingAttachment;
 };
