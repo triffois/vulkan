@@ -10,8 +10,7 @@
 class Pipeline {
   public:
     Pipeline(const std::string &vertShaderPath,
-             const std::string &fragShaderPath,
-             std::vector<std::reference_wrapper<IAttachment>> attachments);
+             const std::string &fragShaderPath);
 
     // Make uncopyable
     Pipeline(const Pipeline &) = delete;
@@ -29,6 +28,8 @@ class Pipeline {
         return attachments;
     }
     DescriptorLayout &getDescriptorLayout() { return descriptorLayout; }
+
+    void bind(IAttachment &attachment) { attachments.push_back(attachment); }
 
     void prepareForRendering() const;
 

@@ -17,25 +17,38 @@ int main(int argc, char *argv[]) {
     try {
         Engine engine;
 
-        UniformAttachment uniformAttachment(&engine.getGlobalResources(),
-                                            *engine.getCamera(), 0);
-        uniformAttachment.init(engine.getDevice()->getMaxFramesInFlight());
-        TextureAttachment &textureAttachment = engine.getGlobalResources()
-                                                   .getTextureManager()
-                                                   .getTextureAttachment();
-
-        std::vector<std::reference_wrapper<IAttachment>> attachments;
-        attachments.push_back(uniformAttachment);
-        attachments.push_back(textureAttachment);
-
         // Load the model into a scene
-        PipelineID pipelineID = engine.createPipeline(
-            "shaders/vert.spv", "shaders/frag.spv", std::move(attachments));
+        PipelineID pipelineID =
+            engine.createPipeline("shaders/vert.spv", "shaders/frag.spv");
         Scene scene = ModelLoader::loadFromGLTF(
             argv[1], engine.getGlobalResources(), pipelineID);
 
+        // Bind all the resources
+        UniformAttachment uniformAttachment(&engine.getGlobalResources(),
+                                            *engine.getCamera(), 0);
+        uniformAttachment.init(engine.getDevice()->getMaxFramesInFlight());
+
+        TextureAttachment textureAttachment = engine.getGlobalResources()
+                                                  .getTextureManager()
+                                                  .getTextureAttachment();
+
+        engine.bind(pipelineID, uniformAttachment);
+        engine.bind(pipelineID, textureAttachment);
+
         // Prepare scene resources before rendering
+        // TODO: consider initing pipelines here more explicitly
+        // along the lines of modelLoader returning a PipelineID, and here being
+        // engine.setMaterial(pipelineID, "shaders/vert.spv",
+        // "shaders/frag.spv", {uniformAttachment, textureAttachment});
         engine.prepareResources();
+
+        // TODO: consider returning RenderPasses or Renderables or whatever here
+        // Since the scene still separates rendering by pipeline (obviously),
+        // bonus points: combine with the previous step into something along the
+        // lines of Renderable renderable = scene.using("shaders/frag.spv",
+        // "shaders/vert.spv", {uniformAttachment, textureAttachment});
+        // (and then potentially rename Scene to Model - we going in circles
+        // yippee)
         scene.prepareForRendering();
 
         // Main render loop

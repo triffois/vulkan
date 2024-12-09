@@ -3,8 +3,6 @@
 
 void TextureManager::init(Device *device) { this->device = device; }
 
-void TextureManager::cleanup() { textureAttachment.cleanup(); }
-
 TextureID TextureManager::registerTexture(const TextureData &textureData) {
     if (resourcesPrepared) {
         throw std::runtime_error(
@@ -24,10 +22,8 @@ TextureID TextureManager::registerTexture(const TextureData &textureData) {
     return static_cast<TextureID>(textures.size() - 1);
 }
 
-void TextureManager::prepareResources() {
-    if (resourcesPrepared) {
-        std::runtime_error("Resources have already been prepared");
-    }
+TextureAttachment TextureManager::getTextureAttachment() {
+    TextureAttachment textureAttachment;
     textureAttachment.init(device, MAX_TEXTURE_DIMENSION, textures, 1);
-    resourcesPrepared = true;
+    return textureAttachment;
 }

@@ -20,9 +20,8 @@ class PipelineManager {
     void init(Device *device);
     void cleanup();
 
-    PipelineID createPipeline(
-        const std::string &vertPath, const std::string &fragPath,
-        std::vector<std::reference_wrapper<IAttachment>> attachments);
+    PipelineID createPipeline(const std::string &vertPath,
+                              const std::string &fragPath);
 
     Pipeline &getPipeline(const PipelineID &id) const;
 

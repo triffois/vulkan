@@ -13,7 +13,6 @@ void GlobalResources::init(Device *device, AppWindow *appWindow) {
 }
 
 void GlobalResources::cleanup() {
-    textureManager.cleanup();
     meshManager.cleanup();
     pipelineManager.cleanup();
 
@@ -24,6 +23,5 @@ void GlobalResources::prepareResources() {
     VkFormat colorFormat = swapChain->getImageFormat();
     VkFormat depthFormat = swapChain->findDepthFormat();
 
-    textureManager.prepareResources();
     pipelineManager.prepareResources(colorFormat, depthFormat);
 }

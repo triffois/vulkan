@@ -19,8 +19,6 @@ class TextureManager {
     TextureID registerTexture(const TextureData &textureData);
 
     void init(Device *device);
-    void prepareResources();
-    void cleanup();
 
     std::vector<glm::vec4> getTextureResolutions() const {
         std::vector<glm::vec4> resolutions;
@@ -36,11 +34,9 @@ class TextureManager {
         return resolutions;
     }
 
-    TextureAttachment &getTextureAttachment() { return textureAttachment; }
+    TextureAttachment getTextureAttachment();
 
   private:
-    TextureAttachment textureAttachment;
-
     Device *device = nullptr;
     std::vector<TextureData> textures;
 
