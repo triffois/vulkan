@@ -1,6 +1,8 @@
 #pragma once
 
+#include "Model.h"
 #include "Pipeline.h"
+#include "TextureManager.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
@@ -17,9 +19,9 @@
 #include "CommandBuffer.h"
 #include "Device.h"
 #include "EnginePeripherals.h"
+#include "GlobalResources.h"
 #include "Pipeline.h"
 #include "Render.h"
-#include "SwapChain.h"
 
 class Engine {
   public:
@@ -34,22 +36,19 @@ class Engine {
     void finishRender(Render &render);
     Camera *getCamera();
 
+    GlobalResources &getGlobalResources() { return globalResources; }
     Device *getDevice() { return &appDevice; }
-    Pipeline createPipeline(const std::string &vertShaderPath,
-                            const std::string &fragShaderPath,
-                            const Model &model);
 
-    Pipeline createPipelineInstanced(const std::string &vertShaderPath,
-                            const std::string &fragShaderPath,
-                            const Model &model,
-                            const std::vector<PerInstanceData> &instanceData);
+    TextureManager createTextureManager();
+    Renderable shaded(Model &model, std::string vertexShaderPath,
+                      std::string fragmentShaderPath);
 
   private:
     AppInstance appInstance;
     AppWindow appWindow;
     Device appDevice;
+    GlobalResources globalResources;
     VkDevice device;
-    std::unique_ptr<SwapChain> swapChain;
     std::vector<Pipeline> pipelines;
 
     EnginePeripheralsManager peripheralsManager;

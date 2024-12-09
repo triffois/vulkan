@@ -1,30 +1,35 @@
 #pragma once
 
-#include "commonstructs.h"
+#include "IAttachment.h"
+#include "RenderBatch.h"
+#include <cstring>
 #include <vector>
-#include <string>
-
-struct TextureData {
-    std::vector<unsigned char> pixels;
-    int width;
-    int height;
-    int channels;
-    std::string mimeType;
-};
 
 class Model {
   public:
-    Model(const std::vector<Vertex> &vertices,
-          const std::vector<uint16_t> &indices,
-          const std::vector<TextureData> &textures = {})
-        : vertices(vertices), indices(indices), textures(textures) {}
+    Model() = default;
 
-    const std::vector<Vertex> &getVertices() const { return vertices; }
-    const std::vector<uint16_t> &getIndices() const { return indices; }
-    const std::vector<TextureData> &getTextures() const { return textures; }
+    // TODO: think of somehow tagging the materials before the conversion to a
+    // RenderBatch happens - for the purposes of cluttering the callsite less
+    // Maybe call that abstraction "Scene", and make it a container for models
+    // with one model per material
+    void addBatch(RenderBatch &&batch);
+    void bind(IAttachment &attachment) { attachments.push_back(attachment); }
+
+    // TODO:
+    // Modle merge(const Model &other) const; (or addition)
+    // void scale(float factor);
+    // void translate(const glm::vec3 &offset);
+    // void duplicate(const std::vector<glm::vec3> &positions);
+    // void rotate(float angle, const glm::vec3 &axis);
+    // void scatter(const std::vector<glm::vec3> &offsets);
+
+    std::vector<RenderBatch> &getBatches() { return batches; }
+    std::vector<std::reference_wrapper<IAttachment>> &getAttachments() {
+        return attachments;
+    }
 
   private:
-    std::vector<Vertex> vertices;
-    std::vector<uint16_t> indices;
-    std::vector<TextureData> textures;
+    std::vector<RenderBatch> batches;
+    std::vector<std::reference_wrapper<IAttachment>> attachments;
 };

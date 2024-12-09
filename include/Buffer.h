@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Device.h"
+#include "DeviceMemoryAllocation.h"
 #include <vulkan/vulkan.h>
 
 class Buffer {
@@ -16,12 +17,11 @@ class Buffer {
     Buffer &operator=(const Buffer &) = delete;
 
     VkBuffer getBuffer() const { return buffer; }
-    const DeviceMemoryAllocationHandle &getAllocation() const {
-        return allocation;
-    }
 
     void copyFrom(Buffer &srcBuffer, VkDeviceSize size);
     void copyToImage(VkImage image, uint32_t width, uint32_t height);
+    void copyToImage(VkImage image,
+                     const std::vector<VkBufferImageCopy> &regions);
 
     void map(void **data);
     void unmap();

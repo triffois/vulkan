@@ -1,91 +1,46 @@
 #pragma once
 
-#include "Buffer.h"
-#include "Camera.h"
 #include "DescriptorLayout.h"
-#include "DescriptorPool.h"
-#include "DescriptorSet.h"
 #include "Device.h"
-#include "Image.h"
-#include "Model.h"
-#include <memory>
+#include "IAttachment.h"
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 class Pipeline {
   public:
-    Pipeline(Device *device, const std::string &vertShaderPath,
-             const std::string &fragShaderPath, VkFormat colorFormat,
-             VkFormat depthFormat, const Model &model,
-             uint32_t maxFramesInFlight, const std::vector<PerInstanceData> &instanceData = {});
+    Pipeline(Device *device, DescriptorLayout descriptorLayout,
+             VkFormat colorFormat, VkFormat depthFormat,
+             uint32_t maxFramesInFlight, const std::string &vertShaderPath,
+             const std::string &fragShaderPath,
+             std::vector<std::reference_wrapper<IAttachment>> attachments);
 
-    // TODO think about how to handle copying
+    // Make uncopyable
+    Pipeline(const Pipeline &) = delete;
+    Pipeline &operator=(const Pipeline &) = delete;
 
     void cleanup();
-    void updateUniformBuffer(uint32_t currentFrame, Camera &camera,
-                             const VkExtent2D &swapChainExtent) const;
 
     VkPipeline getPipeline() const { return graphicsPipeline; }
     VkPipelineLayout getLayout() const { return pipelineLayout; }
-    const Model &getModel() const { return model; }
-
-    VkDescriptorSet getDescriptorSet(uint32_t frameIndex) const {
-        return descriptorSet.getSet(frameIndex);
+    const std::vector<std::reference_wrapper<IAttachment>> &
+    getAttachments() const {
+        return attachments;
     }
-    VkBuffer getVertexBuffer() const { return vertexBuffer->getBuffer(); }
-    VkBuffer getIndexBuffer() const { return indexBuffer->getBuffer(); }
-    VkBuffer getInstanceDataBuffer() const {return instanceDataBuffer->getBuffer();};
-    uint32_t getIndexCount() const { return model.getIndices().size(); }
 
-    bool isInstancedRenderingUsed() const {return ifUseInstancedRendering;};
-    size_t getNumInstances() const {return numInstances;};
+    void bind(IAttachment &attachment) { attachments.push_back(attachment); }
+    DescriptorLayout &getDescriptorLayout() { return descriptorLayout; }
 
-    glm::mat4 modelMatrix = glm::mat4(1.0f);
+    void prepareForRendering() const;
 
   private:
     Device *device;
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
-    Model model;
-    std::vector<std::unique_ptr<Image>> images;
-
-    VkSampler textureSampler;
-
-    std::unique_ptr<Buffer> vertexBuffer;
-    std::unique_ptr<Buffer> indexBuffer;
-    std::unique_ptr<Buffer> instanceDataBuffer;
-
-    DeviceMemoryAllocationHandle vertexBufferAllocation;
-    DeviceMemoryAllocationHandle indexBufferAllocation;
-
-    bool ifUseInstancedRendering{false};
-    size_t numInstances{0};
-
-    void createVertexBuffer();
-    void createIndexBuffer();
-    void createInstanceDataBuffer(const std::vector<PerInstanceData> &instanceData);
-
-    DeviceMemoryAllocationHandle createBuffer(VkDeviceSize size,
-                                              VkBufferUsageFlags usage,
-                                              VkMemoryPropertyFlags properties,
-                                              VkBuffer &buffer);
-    void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size);
-
     DescriptorLayout descriptorLayout;
-    DescriptorPool descriptorPool;
-    DescriptorSet descriptorSet;
 
-    std::vector<std::unique_ptr<Buffer>> uniformBuffers;
-    std::vector<void *> uniformBuffersMapped;
-    std::vector<DeviceMemoryAllocationHandle> uniformBuffersAllocations;
+    std::vector<std::reference_wrapper<IAttachment>> attachments;
 
-    glm::mat4 calculateModelMatrix() const;
-
-    void createUniformBuffers(uint32_t maxFramesInFlight);
     VkShaderModule createShaderModule(const std::vector<char> &code);
     std::vector<char> readFile(const std::string &filename);
-
-    void createTextureResources();
-    void createTextureSampler();
 };

@@ -1,16 +1,14 @@
 #pragma once
+
 #include <GLFW/glfw3.h>
 
 #include "Time.h"
 
-class EnginePeripheralsManager
-{
+class EnginePeripheralsManager {
   public:
-    void updatePeripheralsOnFrame() {
-        updateTime();
-    };
+    void updatePeripheralsOnFrame() { updateTime(); };
 
-   private:
+  private:
     void updateTime() {
         Time::currentDeltaTime = glfwGetTime() - Time::prevTimePoint;
         Time::prevTimePoint = glfwGetTime();

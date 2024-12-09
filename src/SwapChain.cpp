@@ -171,11 +171,13 @@ SwapChain::chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities) {
 void SwapChain::createDepthResources() {
     VkFormat depthFormat = findDepthFormat();
 
-    depthImage.createImage(swapChainExtent.width, swapChainExtent.height,
-                           depthFormat, VK_IMAGE_TILING_OPTIMAL,
-                           VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    depthImage.createImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+    depthImage.createImage(
+        swapChainExtent.width, swapChainExtent.height, depthFormat,
+        VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, VMA_MEMORY_USAGE_GPU_ONLY,
+        VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT, 1);
+    depthImage.createImageView(depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT,
+                               VK_IMAGE_VIEW_TYPE_2D, 1);
 }
 
 void SwapChain::cleanupDepthResources() { depthImage.cleanUp(); }
@@ -293,8 +295,7 @@ uint32_t SwapChain::acquireNextImage(VkSemaphore imageAvailableSemaphore) {
 
     if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
         handleResizing();
-        return acquireNextImage(
-            imageAvailableSemaphore);
+        return acquireNextImage(imageAvailableSemaphore);
     } else if (result != VK_SUCCESS) {
         throw std::runtime_error("Failed to acquire swap chain image!");
     }

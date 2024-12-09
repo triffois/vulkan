@@ -1,27 +1,17 @@
 #include "DescriptorLayout.h"
-#include <array>
+#include "IAttachment.h"
 #include <stdexcept>
 
-void DescriptorLayout::init(VkDevice device) {
-    this->device = device;
-
-    VkDescriptorSetLayoutBinding uboLayoutBinding{};
-    uboLayoutBinding.binding = 0;
-    uboLayoutBinding.descriptorCount = 1;
-    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    uboLayoutBinding.pImmutableSamplers = nullptr;
-    uboLayoutBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-    VkDescriptorSetLayoutBinding samplerLayoutBinding{};
-    samplerLayoutBinding.binding = 1;
-    samplerLayoutBinding.descriptorCount = 1;
-    samplerLayoutBinding.descriptorType =
-        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    samplerLayoutBinding.pImmutableSamplers = nullptr;
-    samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-        uboLayoutBinding, samplerLayoutBinding};
+DescriptorLayout::DescriptorLayout(
+    VkDevice device,
+    std::vector<std::reference_wrapper<IAttachment>> attachments)
+    : device(device) {
+    std::vector<VkDescriptorSetLayoutBinding> bindings;
+    bindings.reserve(attachments.size());
+    for (auto &attachment : attachments) {
+        auto binding = attachment.get().layoutBinding();
+        bindings.push_back(binding);
+    }
 
     VkDescriptorSetLayoutCreateInfo layoutInfo{};
     layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;

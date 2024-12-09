@@ -1,16 +1,13 @@
 #pragma once
 
 #include <list>
-#include <variant>
 
 #include "AppInstance.h"
 #include "AppWindow.h"
 #include "CommandPool.h"
+#include "DeviceMemoryAllocation.h"
 #include "INeedCleanUp.h"
-#include "VMA.h"
 #include "commonstructs.h"
-
-struct DeviceMemoryAllocationHandle;
 
 class Device : public INeedCleanUp {
     friend struct DeviceMemoryAllocationHandle;
@@ -66,9 +63,9 @@ class Device : public INeedCleanUp {
     VkResult unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const;
     CommandPool *getGraphicsCommandPool() { return graphicsCommandPool; }
 
-  private:
-    struct DeviceMemoryAllocation;
+    uint32_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
 
+  private:
     void pickPhysicalDevice();
     void createLogicalDevice();
     void createAllocator();
@@ -92,37 +89,7 @@ class Device : public INeedCleanUp {
 
     CommandPool *graphicsCommandPool;
 
-    struct DeviceMemoryAllocation {
-        std::variant<VkBuffer, VkImage> allocatedObject{};
-        VmaAllocation allocation{};
-
-        bool operator==(const DeviceMemoryAllocation &other) const {
-            if (allocatedObject.index() != other.allocatedObject.index())
-                return false;
-
-            if (allocatedObject.index() == 0 &&
-                std::get<0>(allocatedObject) ==
-                    std::get<0>(other.allocatedObject))
-                return true;
-            else if (allocatedObject.index() == 1 &&
-                     std::get<1>(allocatedObject) ==
-                         std::get<1>(other.allocatedObject))
-                return true;
-
-            return false;
-        }
-
-        bool operator!=(const DeviceMemoryAllocation &other) const {
-            return !operator==(other);
-        }
-    };
-
     std::list<DeviceMemoryAllocation> allocations;
-};
 
-struct DeviceMemoryAllocationHandle {
-    friend class Device;
-
-  private:
-    Device::DeviceMemoryAllocation *allocationInfo{};
+    static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 };

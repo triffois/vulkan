@@ -9,7 +9,7 @@
 
 class Image : public INeedCleanUp {
   public:
-    Image() = default;
+    Image() = delete;
     ~Image() = default;
 
     Image(const Image &) = delete;
@@ -26,9 +26,12 @@ class Image : public INeedCleanUp {
                      VkMemoryPropertyFlags properties,
                      VmaMemoryUsage memoryUsage = VMA_MEMORY_USAGE_GPU_ONLY,
                      VmaAllocationCreateFlagBits allocFlagBits =
-                         VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT);
-    VkImageView createImageView(VkFormat format,
-                                VkImageAspectFlags aspectFlags);
+                         VMA_ALLOCATION_CREATE_STRATEGY_MIN_TIME_BIT,
+                     uint32_t arrayLayers = 1);
+    VkImageView
+    createImageView(VkFormat format, VkImageAspectFlags aspectFlags,
+                    VkImageViewType viewType = VK_IMAGE_VIEW_TYPE_2D,
+                    uint32_t layerCount = 1);
 
     void transitionImageLayout(VkFormat format, VkImageLayout oldLayout,
                                VkImageLayout newLayout);
@@ -48,8 +51,8 @@ class Image : public INeedCleanUp {
 
   private:
     Device &device;
-    VkImage image;
-    VkImageView imageView;
-    VmaAllocation imageAllocation;
-    VmaAllocator allocator;
+    VkImage image = VK_NULL_HANDLE;
+    VkImageView imageView = VK_NULL_HANDLE;
+    VmaAllocation imageAllocation = VK_NULL_HANDLE;
+    VmaAllocator allocator = VK_NULL_HANDLE;
 };

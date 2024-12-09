@@ -1,14 +1,13 @@
 #pragma once
 
 #include "Camera.h"
-#include "Device.h"
-#include "Pipeline.h"
-#include "SwapChain.h"
+#include "GlobalResources.h"
+#include "Renderable.h"
 #include <vulkan/vulkan.h>
 
 class Render {
   public:
-    Render(Device *device, SwapChain *swapChain, VkCommandBuffer commandBuffer,
+    Render(GlobalResources *globalResources, VkCommandBuffer commandBuffer,
            uint32_t imageIndex, uint32_t currentFrame,
            VkSemaphore imageAvailableSemaphore,
            VkSemaphore renderFinishedSemaphore, VkFence inFlightFence,
@@ -19,12 +18,11 @@ class Render {
     Render(const Render &) = delete;
     Render &operator=(const Render &) = delete;
 
-    void submit(const Pipeline &pipeline);
+    void submit(Renderable &renderable);
     bool finish();
 
   private:
-    Device *device;
-    SwapChain *swapChain;
+    GlobalResources *globalResources;
     VkCommandBuffer commandBuffer;
     uint32_t imageIndex;
     uint32_t currentFrame;
@@ -34,6 +32,8 @@ class Render {
     Camera &camera;
     bool isFinished = false;
 
-    void recordRenderingCommands(const Pipeline &pipeline);
+    void recordRenderingCommands(Renderable &scene);
+    void recordRenderingCommands(RenderPass &pass);
+
     void submitCommandBuffer();
 };

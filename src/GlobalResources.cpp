@@ -1,0 +1,19 @@
+#include "GlobalResources.h"
+
+void GlobalResources::init(Device *device, AppWindow *appWindow) {
+    this->device = device;
+
+    SwapChainSupportDetails swapChainSupport =
+        device->querySwapChainSupportCurrent();
+    swapChain = std::make_unique<SwapChain>(device, appWindow);
+
+    pipelineManager.init(device);
+    meshManager.init(device);
+}
+
+void GlobalResources::cleanup() {
+    meshManager.cleanup();
+    pipelineManager.cleanup();
+
+    swapChain->cleanup();
+}

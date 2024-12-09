@@ -14,8 +14,8 @@ Render Engine::startRender() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
 
-    uint32_t imageIndex =
-        swapChain->acquireNextImage(imageAvailableSemaphores[currentFrame]);
+    uint32_t imageIndex = globalResources.getSwapChain().acquireNextImage(
+        imageAvailableSemaphores[currentFrame]);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -26,10 +26,10 @@ Render Engine::startRender() {
         commandBuffers[currentFrame]->getCommandBuffer();
 
     // Transition image layouts using SwapChain methods
-    swapChain->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                     imageIndex, currentCmdBuffer);
-    swapChain->transitionDepthImageLayout(
+    globalResources.getSwapChain().transitionImageLayout(
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        imageIndex, currentCmdBuffer);
+    globalResources.getSwapChain().transitionDepthImageLayout(
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, currentCmdBuffer);
 
@@ -37,7 +37,7 @@ Render Engine::startRender() {
     peripheralsManager.updatePeripheralsOnFrame();
     processKeyboardInput();
 
-    return Render(&appDevice, swapChain.get(),
+    return Render(&globalResources,
                   commandBuffers[currentFrame]->getCommandBuffer(), imageIndex,
                   currentFrame, imageAvailableSemaphores[currentFrame],
                   renderFinishedSemaphores[currentFrame],
@@ -47,10 +47,10 @@ Render Engine::startRender() {
 void Engine::finishRender(Render &render) {
     bool needsRecreation = render.finish();
 
-    //TODO: fix semaphores staying signaled when window is resized
+    // TODO: fix semaphores staying signaled when window is resized
     if (needsRecreation || framebufferResized) {
         framebufferResized = false;
-        swapChain->handleResizing();
+        globalResources.getSwapChain().handleResizing();
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -110,16 +110,15 @@ void Engine::initVulkan() {
     appInstance.setAppDevice(appDevice.getDevice());
     device = *appDevice.getDevice();
 
-    SwapChainSupportDetails swapChainSupport =
-        appDevice.querySwapChainSupportCurrent();
-    swapChain = std::make_unique<SwapChain>(&appDevice, &appWindow);
-
     createCommandBuffers();
     createSyncObjects();
+
+    // Initialize global resources
+    globalResources.init(&appDevice, &appWindow);
 }
 
 void Engine::cleanup() {
-    swapChain->cleanup();
+    globalResources.cleanup();
 
     // vkDestroyImage(device, textureImage, nullptr);
     // vkFreeMemory(device, textureImageMemory, nullptr);
@@ -174,18 +173,12 @@ void Engine::createSyncObjects() {
     }
 }
 
-Pipeline Engine::createPipeline(const std::string &vertShaderPath,
-                                const std::string &fragShaderPath,
-                                const Model &model) {
-    return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
-                    swapChain->getImageFormat(), swapChain->findDepthFormat(),
-                    model, MAX_FRAMES_IN_FLIGHT);
+TextureManager Engine::createTextureManager() {
+    return TextureManager(&appDevice);
 }
 
-Pipeline Engine::createPipelineInstanced(const std::string &vertShaderPath, const std::string &fragShaderPath,
-    const Model &model, const std::vector<PerInstanceData> &instanceData) {
-
-    return Pipeline(&appDevice, vertShaderPath, fragShaderPath,
-                    swapChain->getImageFormat(), swapChain->findDepthFormat(),
-                    model, MAX_FRAMES_IN_FLIGHT, instanceData);
+Renderable Engine::shaded(Model &model, std::string vertexShaderPath,
+                          std::string fragmentShaderPath) {
+    return Renderable(&globalResources, model, vertexShaderPath,
+                      fragmentShaderPath);
 }
