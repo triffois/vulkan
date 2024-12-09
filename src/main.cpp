@@ -26,6 +26,14 @@ int main(int argc, char *argv[]) {
         auto model = ModelLoader::loadFromGLTF(
             argv[1], engine.getGlobalResources(), textures);
 
+        std::vector<glm::vec3> offsets;
+        for (int i = -500; i < 500; i += 100) {
+            for (int j = -500; j < 500; j += 100) {
+                offsets.push_back(glm::vec3{i, 0, j});
+            }
+        }
+        model.scatter(offsets);
+
         // Create the uniform attachment with a lambda for updates
         auto uniformUpdator = [&engine, &textures](UniformBufferObject &ubo) {
             auto camera = engine.getCamera();
