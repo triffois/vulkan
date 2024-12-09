@@ -18,10 +18,3 @@ void GlobalResources::cleanup() {
 
     swapChain->cleanup();
 }
-
-void GlobalResources::prepareResources() {
-    VkFormat colorFormat = swapChain->getImageFormat();
-    VkFormat depthFormat = swapChain->findDepthFormat();
-
-    pipelineManager.prepareResources(colorFormat, depthFormat);
-}

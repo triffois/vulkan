@@ -21,8 +21,6 @@ class GlobalResources {
     TextureManager &getTextureManager() { return textureManager; }
     Device *getDevice() { return device; }
 
-    void prepareResources();
-
   private:
     Device *device = nullptr;
     std::unique_ptr<SwapChain> swapChain;

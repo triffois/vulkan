@@ -12,7 +12,7 @@
 class RenderPass {
   public:
     RenderPass(GlobalResources *globalResources, const RenderBatch &batch,
-               uint32_t maxFramesInFlight);
+               PipelineID pipelineId, uint32_t maxFramesInFlight);
     ~RenderPass();
 
     // Prevent copying

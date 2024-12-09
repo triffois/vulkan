@@ -2,7 +2,7 @@
 
 #include "Camera.h"
 #include "GlobalResources.h"
-#include "Scene.h"
+#include "Renderable.h"
 #include <vulkan/vulkan.h>
 
 class Render {
@@ -18,7 +18,7 @@ class Render {
     Render(const Render &) = delete;
     Render &operator=(const Render &) = delete;
 
-    void submit(Scene &scene);
+    void submit(Renderable &renderable);
     bool finish();
 
   private:
@@ -32,7 +32,7 @@ class Render {
     Camera &camera;
     bool isFinished = false;
 
-    void recordRenderingCommands(Scene &scene);
+    void recordRenderingCommands(Renderable &scene);
     void recordRenderingCommands(RenderPass &pass);
 
     void submitCommandBuffer();

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Model.h"
 #include "Pipeline.h"
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
@@ -36,11 +37,9 @@ class Engine {
 
     GlobalResources &getGlobalResources() { return globalResources; }
     Device *getDevice() { return &appDevice; }
-    PipelineID createPipeline(const std::string &vertShaderPath,
-                              const std::string &fragShaderPath);
-    void bind(PipelineID pipelineID, IAttachment &attachment);
 
-    void prepareResources();
+    Renderable shaded(Model &model, std::string vertexShaderPath,
+                      std::string fragmentShaderPath);
 
   private:
     AppInstance appInstance;

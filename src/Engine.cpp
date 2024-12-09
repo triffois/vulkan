@@ -173,16 +173,8 @@ void Engine::createSyncObjects() {
     }
 }
 
-PipelineID Engine::createPipeline(const std::string &vertShaderPath,
-                                  const std::string &fragShaderPath) {
-    auto &manager = globalResources.getPipelineManager();
-    return manager.createPipeline(vertShaderPath, fragShaderPath);
+Renderable Engine::shaded(Model &model, std::string vertexShaderPath,
+                          std::string fragmentShaderPath) {
+    return Renderable(&globalResources, model, vertexShaderPath,
+                      fragmentShaderPath);
 }
-
-void Engine::bind(PipelineID pipelineID, IAttachment &attachment) {
-    auto &manager = globalResources.getPipelineManager();
-    auto &pipeline = manager.getPipeline(pipelineID);
-    pipeline.bind(attachment);
-}
-
-void Engine::prepareResources() { globalResources.prepareResources(); }

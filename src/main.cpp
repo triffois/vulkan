@@ -5,7 +5,6 @@
 
 #include "Engine.h"
 #include "ModelLoader.h"
-#include "Scene.h"
 
 int main(int argc, char *argv[]) {
     if (argc != 2) {
@@ -18,43 +17,28 @@ int main(int argc, char *argv[]) {
         Engine engine;
 
         // Load the model into a scene
-        PipelineID pipelineID =
-            engine.createPipeline("shaders/vert.spv", "shaders/frag.spv");
-        Scene scene = ModelLoader::loadFromGLTF(
-            argv[1], engine.getGlobalResources(), pipelineID);
+        auto model =
+            ModelLoader::loadFromGLTF(argv[1], engine.getGlobalResources());
 
         // Bind all the resources
         UniformAttachment uniformAttachment(&engine.getGlobalResources(),
                                             *engine.getCamera(), 0);
-        uniformAttachment.init(engine.getDevice()->getMaxFramesInFlight());
 
+        // TODO nonglobal texture managers - this one is certainly possible
         TextureAttachment textureAttachment = engine.getGlobalResources()
                                                   .getTextureManager()
                                                   .getTextureAttachment();
 
-        engine.bind(pipelineID, uniformAttachment);
-        engine.bind(pipelineID, textureAttachment);
+        model.bind(uniformAttachment);
+        model.bind(textureAttachment);
 
-        // Prepare scene resources before rendering
-        // TODO: consider initing pipelines here more explicitly
-        // along the lines of modelLoader returning a PipelineID, and here being
-        // engine.setMaterial(pipelineID, "shaders/vert.spv",
-        // "shaders/frag.spv", {uniformAttachment, textureAttachment});
-        engine.prepareResources();
-
-        // TODO: consider returning RenderPasses or Renderables or whatever here
-        // Since the scene still separates rendering by pipeline (obviously),
-        // bonus points: combine with the previous step into something along the
-        // lines of Renderable renderable = scene.using("shaders/frag.spv",
-        // "shaders/vert.spv", {uniformAttachment, textureAttachment});
-        // (and then potentially rename Scene to Model - we going in circles
-        // yippee)
-        scene.prepareForRendering();
+        auto renderable =
+            engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");
 
         // Main render loop
         while (engine.running()) {
             auto render = engine.startRender();
-            render.submit(scene);
+            render.submit(renderable);
             engine.finishRender(render);
         }
     } catch (const std::exception &e) {

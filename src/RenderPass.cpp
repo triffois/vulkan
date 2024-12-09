@@ -4,9 +4,10 @@
 #include <cstring>
 
 RenderPass::RenderPass(GlobalResources *globalResources,
-                       const RenderBatch &batch, uint32_t maxFramesInFlight)
+                       const RenderBatch &batch, PipelineID pipelineId,
+                       uint32_t maxFramesInFlight)
     : globalResources(globalResources), meshId(batch.meshId),
-      pipelineId(batch.pipelineId) {
+      pipelineId(pipelineId) {
     createInstanceBuffer(batch);
     auto device = globalResources->getDevice();
     auto &pipeline =

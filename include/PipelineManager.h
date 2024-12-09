@@ -20,15 +20,13 @@ class PipelineManager {
     void init(Device *device);
     void cleanup();
 
-    PipelineID createPipeline(const std::string &vertPath,
-                              const std::string &fragPath);
+    PipelineID createPipeline(
+        DescriptorLayout descriptorLayout, VkFormat colorFormat,
+        VkFormat depthFormat, uint32_t maxFramesInFlight,
+        const std::string &vertPath, const std::string &fragPath,
+        std::vector<std::reference_wrapper<IAttachment>> attachments);
 
     Pipeline &getPipeline(const PipelineID &id) const;
-
-    // Should be called after all the textures have been loaded
-    // I don't know why - to eepy to understand my own code at this point -
-    // but it's necessary
-    void prepareResources(VkFormat colorFormat, VkFormat depthFormat);
 
   private:
     Device *device = nullptr;

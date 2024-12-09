@@ -42,16 +42,16 @@ Render::Render(GlobalResources *globalResources, VkCommandBuffer commandBuffer,
     vkCmdBeginRendering(commandBuffer, &renderingInfo);
 }
 
-void Render::submit(Scene &scene) {
+void Render::submit(Renderable &renderable) {
     if (isFinished) {
         throw std::runtime_error("Cannot submit to a finished render!");
     }
 
-    recordRenderingCommands(scene);
+    recordRenderingCommands(renderable);
 }
 
-void Render::recordRenderingCommands(Scene &scene) {
-    for (RenderPass &pass : scene.getRenderPasses()) {
+void Render::recordRenderingCommands(Renderable &renderable) {
+    for (RenderPass &pass : renderable.getRenderPasses()) {
         recordRenderingCommands(pass);
     }
 }

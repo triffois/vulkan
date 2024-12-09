@@ -9,15 +9,15 @@
 
 class Pipeline {
   public:
-    Pipeline(const std::string &vertShaderPath,
-             const std::string &fragShaderPath);
+    Pipeline(Device *device, DescriptorLayout descriptorLayout,
+             VkFormat colorFormat, VkFormat depthFormat,
+             uint32_t maxFramesInFlight, const std::string &vertShaderPath,
+             const std::string &fragShaderPath,
+             std::vector<std::reference_wrapper<IAttachment>> attachments);
 
     // Make uncopyable
     Pipeline(const Pipeline &) = delete;
     Pipeline &operator=(const Pipeline &) = delete;
-
-    void init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
-              uint32_t maxFramesInFlight);
 
     void cleanup();
 
@@ -27,9 +27,9 @@ class Pipeline {
     getAttachments() const {
         return attachments;
     }
-    DescriptorLayout &getDescriptorLayout() { return descriptorLayout; }
 
     void bind(IAttachment &attachment) { attachments.push_back(attachment); }
+    DescriptorLayout &getDescriptorLayout() { return descriptorLayout; }
 
     void prepareForRendering() const;
 
@@ -37,12 +37,9 @@ class Pipeline {
     Device *device;
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
-
-    std::vector<std::reference_wrapper<IAttachment>> attachments;
     DescriptorLayout descriptorLayout;
 
-    std::string vertShaderPath;
-    std::string fragShaderPath;
+    std::vector<std::reference_wrapper<IAttachment>> attachments;
 
     VkShaderModule createShaderModule(const std::vector<char> &code);
     std::vector<char> readFile(const std::string &filename);

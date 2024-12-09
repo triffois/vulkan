@@ -264,9 +264,8 @@ ModelLoader::processTextures(const tinygltf::Model &model,
     return textures;
 }
 
-Scene ModelLoader::loadFromGLTF(const std::string &filename,
-                                GlobalResources &resources,
-                                PipelineID pipelineId) {
+Model ModelLoader::loadFromGLTF(const std::string &filename,
+                                GlobalResources &resources) {
     tinygltf::Model gltfModel;
     tinygltf::TinyGLTF loader;
     std::string err, warn;
@@ -290,7 +289,7 @@ Scene ModelLoader::loadFromGLTF(const std::string &filename,
         throw std::runtime_error("Failed to load GLTF file: " + filename);
     }
 
-    Scene scene(&resources);
+    Model model;
     std::map<int32_t, ProcessedPrimitive> materialPrimitives;
 
     // Process each root node
@@ -304,19 +303,17 @@ Scene ModelLoader::loadFromGLTF(const std::string &filename,
     }
 
     // Create render batches from processed primitives
-    createRenderBatches(materialPrimitives, gltfModel, resources, &scene,
-                        pipelineId);
+    createRenderBatches(materialPrimitives, gltfModel, resources, model);
 
-    return scene;
+    return model;
 }
 
 void ModelLoader::createRenderBatches(
     const std::map<int32_t, ProcessedPrimitive> &primitives,
-    const tinygltf::Model &model, GlobalResources &resources, Scene *scene,
-    PipelineID pipelineId) {
+    const tinygltf::Model &source, GlobalResources &resources,
+    Model &destination) {
 
     auto &meshManager = resources.getMeshManager();
-    auto &pipelineManager = resources.getPipelineManager();
     auto &textureManager = resources.getTextureManager();
 
     for (const auto &[materialIndex, primitive] : primitives) {
@@ -327,16 +324,15 @@ void ModelLoader::createRenderBatches(
         // Create a single instance for this primitive
         Instance instance;
         if (materialIndex >= 0) {
-            instance.material = processMaterial(model.materials[materialIndex],
-                                                model, textureManager);
+            instance.material = processMaterial(source.materials[materialIndex],
+                                                source, textureManager);
         }
 
         // Create render batch
         RenderBatch batch;
         batch.meshId = meshId;
-        batch.pipelineId = pipelineId;
         batch.instances.push_back(instance);
 
-        scene->addBatch(std::move(batch));
+        destination.addBatch(std::move(batch));
     }
 }

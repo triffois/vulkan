@@ -2,11 +2,10 @@
 #include "IAttachment.h"
 #include <stdexcept>
 
-void DescriptorLayout::init(
+DescriptorLayout::DescriptorLayout(
     VkDevice device,
-    std::vector<std::reference_wrapper<IAttachment>> attachments) {
-    this->device = device;
-
+    std::vector<std::reference_wrapper<IAttachment>> attachments)
+    : device(device) {
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     bindings.reserve(attachments.size());
     for (auto &attachment : attachments) {

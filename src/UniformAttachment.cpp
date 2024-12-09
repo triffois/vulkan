@@ -3,9 +3,10 @@
 UniformAttachment::UniformAttachment(GlobalResources *globalResources,
                                      Camera &camera, uint32_t bindingLocation)
     : globalResources(globalResources), camera(&camera),
-      bindingLocation(bindingLocation) {}
+      bindingLocation(bindingLocation) {
+    auto maxFramesInFlight =
+        globalResources->getDevice()->getMaxFramesInFlight();
 
-void UniformAttachment::init(uint32_t maxFramesInFlight) {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
     uniformBuffers.resize(maxFramesInFlight);
     uniformBuffersMapped.resize(maxFramesInFlight);

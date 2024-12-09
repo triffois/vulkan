@@ -1,7 +1,7 @@
 #pragma once
 
 #include "GlobalResources.h"
-#include "Scene.h"
+#include "Model.h"
 #include "tiny_gltf.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -48,12 +48,10 @@ class ModelLoader {
 
     static void
     createRenderBatches(const std::map<int32_t, ProcessedPrimitive> &primitives,
-                        const tinygltf::Model &model,
-                        GlobalResources &resources, Scene *scene,
-                        PipelineID pipelineID);
+                        const tinygltf::Model &source,
+                        GlobalResources &resources, Model &destination);
 
   public:
-    static Scene loadFromGLTF(const std::string &filename,
-                              GlobalResources &resources,
-                              PipelineID pipelineID);
+    static Model loadFromGLTF(const std::string &filename,
+                              GlobalResources &resources);
 };

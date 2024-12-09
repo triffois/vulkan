@@ -10,16 +10,14 @@
 
 #include <stb_image.h>
 
-Pipeline::Pipeline(const std::string &vertShaderPath,
-                   const std::string &fragShaderPath)
-    : vertShaderPath(vertShaderPath), fragShaderPath(fragShaderPath) {}
-
-void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
-                    uint32_t maxFramesInFlight) {
-    this->device = device;
-
-    descriptorLayout.init(*device->getDevice(), attachments);
-
+Pipeline::Pipeline(Device *device, DescriptorLayout descriptorLayout,
+                   VkFormat colorFormat, VkFormat depthFormat,
+                   uint32_t maxFramesInFlight,
+                   const std::string &vertShaderPath,
+                   const std::string &fragShaderPath,
+                   std::vector<std::reference_wrapper<IAttachment>> attachments)
+    : device(device), descriptorLayout(std::move(descriptorLayout)),
+      attachments(attachments) {
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);
 

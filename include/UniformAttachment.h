@@ -14,8 +14,6 @@ class UniformAttachment : public IAttachment {
                       uint32_t bindingLocation);
     ~UniformAttachment() override = default;
 
-    void init(uint32_t maxFramesInFlight);
-
     // Implement interface methods
     VkDescriptorSetLayoutBinding layoutBinding() const override;
     void updateDescriptorSet(uint32_t maxFramesInFlight,
