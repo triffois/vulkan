@@ -35,25 +35,31 @@ int main(int argc, char *argv[]) {
                                             (float)swapChainExtent.height,
                                         0.1f, 1000.0f);
             ubo.proj[1][1] *= -1;
+        };
 
+        auto resolutionUpdator = [&textures](glm::vec4 ubo[256]) {
             // Get texture resolutions and fill the array
             auto resolutions = textures.getTextureResolutions();
 
             // Fill remaining slots with zero
             for (size_t i = resolutions.size(); i < 256; i++) {
-                ubo.textureResolutions[i] = glm::vec4(0.0f);
+                ubo[i] = glm::vec4(0.0f);
             }
             for (size_t i = 0; i < resolutions.size(); i++) {
-                ubo.textureResolutions[i] = resolutions[i];
+                ubo[i] = resolutions[i];
             }
         };
 
         UniformAttachment<UniformBufferObject> uniformAttachment(
             engine.getDevice(), uniformUpdator, 0);
 
-        TextureAttachment textureAttachment = textures.getTextureAttachment(1);
+        UniformAttachment<glm::vec4[256]> resolutionsAttachment(
+            engine.getDevice(), resolutionUpdator, 1);
+
+        TextureAttachment textureAttachment = textures.getTextureAttachment(2);
 
         model.bind(uniformAttachment);
+        model.bind(resolutionsAttachment);
         model.bind(textureAttachment);
 
         auto renderable =

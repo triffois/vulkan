@@ -12,7 +12,15 @@ RenderPass::RenderPass(GlobalResources *globalResources,
     auto device = globalResources->getDevice();
     auto &pipeline =
         globalResources->getPipelineManager().getPipeline(pipelineId);
-    descriptorPool.init(*device->getDevice(), maxFramesInFlight);
+
+    std::unordered_map<VkDescriptorType, uint32_t> descriptorTypeCounts;
+    for (auto &attachment : pipeline.getAttachments()) {
+        descriptorTypeCounts[attachment.get().getType()] +=
+            attachment.get().getDescriptorCount();
+    }
+
+    descriptorPool.init(*device->getDevice(), descriptorTypeCounts,
+                        maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool,
                        pipeline.getDescriptorLayout(), maxFramesInFlight);
 

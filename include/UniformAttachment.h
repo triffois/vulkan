@@ -59,6 +59,10 @@ template <typename T> class UniformAttachment : public IAttachment {
         return uboLayoutBinding;
     }
 
+    VkDescriptorType getType() const override {
+        return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    }
+
   private:
     uint32_t bindingLocation;
     std::function<void(T &)> updator;
