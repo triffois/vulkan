@@ -63,7 +63,6 @@ void Render::recordRenderingCommands(RenderPass &pass) {
         globalResources->getPipelineManager().getPipeline(pass.getPipelineId());
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       pipeline.getPipeline());
-
     pass.update(currentFrame);
 
     VkViewport viewport{};

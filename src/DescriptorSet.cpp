@@ -1,4 +1,6 @@
 #include "DescriptorSet.h"
+
+#include <iostream>
 #include <stdexcept>
 
 void DescriptorSet::init(VkDevice device, const DescriptorPool &pool,
@@ -14,8 +16,9 @@ void DescriptorSet::init(VkDevice device, const DescriptorPool &pool,
     allocInfo.descriptorSetCount = count;
     allocInfo.pSetLayouts = layouts.data();
 
-    if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) !=
+    if (auto res = vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()); res !=
         VK_SUCCESS) {
+        std::cout << res << std::endl;
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 }

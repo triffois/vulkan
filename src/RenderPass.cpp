@@ -12,7 +12,7 @@ RenderPass::RenderPass(GlobalResources *globalResources,
     auto device = globalResources->getDevice();
     auto &pipeline =
         globalResources->getPipelineManager().getPipeline(pipelineId);
-    descriptorPool.init(*device->getDevice(), maxFramesInFlight);
+    descriptorPool.init(*device->getDevice(), maxFramesInFlight, 2);
     descriptorSet.init(*device->getDevice(), descriptorPool,
                        pipeline.getDescriptorLayout(), maxFramesInFlight);
 

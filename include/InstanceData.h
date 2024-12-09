@@ -1,5 +1,7 @@
 #pragma once
 
+#include "commonstructs.h"
+
 #include <array>
 #include <glm/glm.hpp>
 #include <vulkan/vulkan.h>
@@ -23,17 +25,18 @@ struct InstanceData {
         std::array<VkVertexInputAttributeDescription, 5>
             attributeDescriptions{};
 
+        auto matrixStartLocation = static_cast<size_t>(VertexAttributesLocations::INSTANCE_MATRIX_START_LOCATION);
         // Transform matrix (4 vec4s)
         for (uint32_t i = 0; i < 4; i++) {
             attributeDescriptions[i].binding = 1;
-            attributeDescriptions[i].location = 3 + i; // Locations 3-6
+            attributeDescriptions[i].location = matrixStartLocation + i; // Locations 3-6
             attributeDescriptions[i].format = VK_FORMAT_R32G32B32A32_SFLOAT;
             attributeDescriptions[i].offset = i * sizeof(glm::vec4);
         }
 
         // Material data (texture indices)
         attributeDescriptions[4].binding = 1;
-        attributeDescriptions[4].location = 7; // Location 7
+        attributeDescriptions[4].location = static_cast<size_t>(VertexAttributesLocations::INSTANCE_MATERIAL_LOCATION); // Location 7
         attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
         attributeDescriptions[4].offset =
             offsetof(InstanceData, textureIndices);

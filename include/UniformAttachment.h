@@ -12,7 +12,7 @@ template <typename T> class UniformAttachment : public IAttachment {
   public:
     UniformAttachment(Device *device, std::function<void(T &)> updator,
                       uint32_t bindingLocation)
-        : updator(updator), bindingLocation(bindingLocation) {
+        : updator(std::move(updator)), bindingLocation(bindingLocation) {
         auto maxFramesInFlight = device->getMaxFramesInFlight();
 
         VkDeviceSize bufferSize = sizeof(T);

@@ -1,5 +1,7 @@
 #include "TextureManager.h"
 #include "UniformAttachment.h"
+#include "SceneLighting.h"
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -53,8 +55,11 @@ int main(int argc, char *argv[]) {
 
         TextureAttachment textureAttachment = textures.getTextureAttachment(1);
 
+        SceneLighting testSources{*engine.getDevice()};
+
         model.bind(uniformAttachment);
         model.bind(textureAttachment);
+        model.bind(testSources.getLightingBuffer());
 
         auto renderable =
             engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");

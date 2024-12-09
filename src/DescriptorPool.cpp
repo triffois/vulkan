@@ -2,12 +2,12 @@
 #include <array>
 #include <stdexcept>
 
-void DescriptorPool::init(VkDevice device, uint32_t maxSets) {
+void DescriptorPool::init(VkDevice device, uint32_t maxSets, uint32_t maxNumStaticLightsSets) {
     this->device = device;
 
     std::array<VkDescriptorPoolSize, 2> poolSizes{};
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = maxSets;
+    poolSizes[0].descriptorCount = maxSets + (maxNumStaticLightsSets) * maxSets;
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = maxSets;
 
