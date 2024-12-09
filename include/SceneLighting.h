@@ -7,15 +7,16 @@
 #include <vector>
 #include <array>
 
-class SceneLighting
-{
+class SceneLighting {
 public:
-    SceneLighting(Device & deviceToUse);
+    SceneLighting(Device &deviceToUse, size_t attachmentBindingIndex);
 
-    SceneLighting (const SceneLighting &other) = delete;
-    SceneLighting (SceneLighting &&other) = delete;
+    SceneLighting(const SceneLighting &other) = delete;
+
+    SceneLighting(SceneLighting &&other) = delete;
 
     const SceneLighting &operator=(const SceneLighting &other) = delete;
+
     const SceneLighting &operator=(SceneLighting &&other) = delete;
 
     UniformAttachment<SimpleLightSource[3]> &getLightingBuffer();

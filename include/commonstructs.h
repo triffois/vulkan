@@ -54,17 +54,17 @@ struct Vertex {
     static std::array<VkVertexInputAttributeDescription, 4>
     getAttributeDescriptions() {
         std::array<VkVertexInputAttributeDescription, 4>
-            attributeDescriptions{};
+                attributeDescriptions{};
 
         attributeDescriptions[0].binding = 0;
         attributeDescriptions[0].location =
-            static_cast<size_t>(VertexAttributesLocations::POSITION_LOCATION);
+                static_cast<size_t>(VertexAttributesLocations::POSITION_LOCATION);
         attributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[0].offset = offsetof(Vertex, pos);
 
         attributeDescriptions[1].binding = 0;
         attributeDescriptions[1].location =
-            static_cast<size_t>(VertexAttributesLocations::COLOR_LOCATION);
+                static_cast<size_t>(VertexAttributesLocations::COLOR_LOCATION);
         attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescriptions[1].offset = offsetof(Vertex, color);
 
@@ -86,14 +86,14 @@ struct Vertex {
 struct UniformBufferObject {
     alignas(16) glm::mat4 view;
     alignas(16) glm::mat4 proj;
-    alignas(16) glm::vec4 textureResolutions[256];
     alignas(16) glm::vec4 camPos{};
 };
 
-struct SimpleLightSource { //alignas(16)
+struct SimpleLightSource {
+    //alignas(16)
     alignas(16) glm::vec4 lightColor{};
     alignas(16) glm::vec4 lightPos{};
-    alignas(4)  float lightIntensity{};
+    alignas(4) float lightIntensity{};
     alignas(4) int lightRange{};
 };
 

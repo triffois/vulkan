@@ -18,6 +18,9 @@ class TextureAttachment : public IAttachment {
     void updateDescriptorSet(uint32_t maxFramesInFlight,
                              DescriptorSet &descriptorSet) override;
     void update(uint32_t frameIndex) override;
+    VkDescriptorType getType() const override {
+        return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    }
 
   private:
     Device *device;

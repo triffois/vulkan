@@ -1,15 +1,19 @@
 #include "DescriptorPool.h"
-#include <array>
 #include <stdexcept>
+#include <vector>
 
-void DescriptorPool::init(VkDevice device, uint32_t maxSets, uint32_t maxNumStaticLightsSets) {
+void DescriptorPool::init(VkDevice device,
+                          std::unordered_map<VkDescriptorType, uint32_t> &descriptorTypeCounts,
+                          uint32_t maxSets) {
     this->device = device;
 
-    std::array<VkDescriptorPoolSize, 2> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[0].descriptorCount = maxSets + (maxNumStaticLightsSets) * maxSets;
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = maxSets;
+    std::vector<VkDescriptorPoolSize> poolSizes;
+    for (auto &pair: descriptorTypeCounts) {
+        VkDescriptorPoolSize poolSize{};
+        poolSize.type = pair.first;
+        poolSize.descriptorCount = pair.second * maxSets;
+        poolSizes.push_back(poolSize);
+    }
 
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

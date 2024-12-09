@@ -3,7 +3,6 @@
 layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-    vec4 textureResolutions[256];
     vec4 camPos;
 } ubo;
 
@@ -29,7 +28,7 @@ void main() {
     vertexPos = inModel * vec4(inPosition, 1.0);
     gl_Position = ubo.proj * ubo.view * vertexPos;
 
-    normalVector = vec3( inModel * vec4(inNormalVector, 1.0));
+    normalVector = vec3(inModel * vec4(inNormalVector, 1.0));
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;

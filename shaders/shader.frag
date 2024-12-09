@@ -1,13 +1,16 @@
 #version 450
 
+//attachments input
 layout(binding = 0) uniform UniformBufferObject {
     mat4 view;
     mat4 proj;
-    vec4 textureResolutions[256];
     vec4 camPos;
 } ubo;
 
-layout(binding = 1) uniform sampler2DArray texSampler;
+layout(binding = 1) uniform Resolutions { vec4 textureResolutions[256]; }
+res;
+
+layout(binding = 2) uniform sampler2DArray texSampler;
 
 struct SimpleLight
 {
@@ -18,8 +21,9 @@ struct SimpleLight
 };
 
 const int nSimpleLights = 3;
-layout(set = 0, binding = 2) uniform lights{ SimpleLight lights[nSimpleLights]; } simpleLights;
+layout(set = 0, binding = 3) uniform lights{ SimpleLight lights[nSimpleLights]; } simpleLights;
 
+//fragment shader input
 layout(location = 0) in vec3 fragColor;
 layout(location = 1) in vec2 fragTexCoord;
 layout(location = 2) in vec4 vertexPos;
@@ -35,7 +39,7 @@ void main() {
     if (textureIndex < 0) {
         textureColor = vec4(fragColor, 1.0);
     } else {
-        vec2 resolution = ubo.textureResolutions[textureIndex].xy;
+        vec2 resolution = res.textureResolutions[textureIndex].xy;
         vec2 scaledUV = fragTexCoord * resolution;
         textureColor = texture(texSampler, vec3(scaledUV, float(textureIndex)));
     }
@@ -49,7 +53,7 @@ void main() {
     float ambientAmount = 0.35f;
     float specularAmount = 0.45f;
 
-    for(int i = 0; i < nSimpleLights; ++i)
+    for (int i = 0; i < nSimpleLights; ++i)
     {
         vec3 LightposVec3 = vec3(simpleLights.lights[i].lightPos.x, simpleLights.lights[i].lightPos.y, simpleLights.lights[i].lightPos.z);
 
