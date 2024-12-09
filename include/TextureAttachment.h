@@ -9,8 +9,9 @@
 
 class TextureAttachment : public IAttachment {
   public:
-    void init(Device *device, uint32_t max_texture_dimension,
-              std::vector<TextureData> &textures, uint32_t bindingLocation);
+    TextureAttachment(Device *device, uint32_t max_texture_dimension,
+                      std::vector<TextureData> &textures,
+                      uint32_t bindingLocation);
     void cleanup();
 
     VkDescriptorSetLayoutBinding layoutBinding() const override;
@@ -19,11 +20,11 @@ class TextureAttachment : public IAttachment {
     void update(uint32_t frameIndex) override;
 
   private:
-    Device *device = nullptr;
-    uint32_t bindingLocation = 0;
+    Device *device;
+    uint32_t bindingLocation;
 
     std::unique_ptr<Image> textureImage;
-    VkSampler textureSampler = VK_NULL_HANDLE;
+    VkSampler textureSampler;
 
     void createTextureArray(uint32_t max_texture_dimension,
                             std::vector<TextureData> &textures);

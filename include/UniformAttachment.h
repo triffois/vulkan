@@ -42,8 +42,9 @@ template <typename T> class UniformAttachment : public IAttachment {
     void updateDescriptorSet(uint32_t maxFramesInFlight,
                              DescriptorSet &descriptorSet) override {
         for (size_t i = 0; i < maxFramesInFlight; i++) {
-            descriptorSet.updateBufferInfo(i, 0, uniformBuffers[i]->getBuffer(),
-                                           0, sizeof(T));
+            descriptorSet.updateBufferInfo(i, bindingLocation,
+                                           uniformBuffers[i]->getBuffer(), 0,
+                                           sizeof(T));
         }
     }
 

@@ -22,8 +22,8 @@ TextureID TextureManager::registerTexture(const TextureData &textureData) {
     return static_cast<TextureID>(textures.size() - 1);
 }
 
-TextureAttachment TextureManager::getTextureAttachment() {
-    TextureAttachment textureAttachment;
-    textureAttachment.init(device, MAX_TEXTURE_DIMENSION, textures, 1);
-    return textureAttachment;
+TextureAttachment
+TextureManager::getTextureAttachment(uint32_t bindingLocation) {
+    return TextureAttachment(device, MAX_TEXTURE_DIMENSION, textures,
+                             bindingLocation);
 }

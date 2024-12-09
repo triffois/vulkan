@@ -1,11 +1,11 @@
-#include "Buffer.h"
 #include "TextureAttachment.h"
+#include "Buffer.h"
 
-void TextureAttachment::init(Device *device, uint32_t max_texture_dimension,
-                             std::vector<TextureData> &textures,
-                             uint32_t bindingLocation) {
-    this->device = device;
-    this->bindingLocation = bindingLocation;
+TextureAttachment::TextureAttachment(Device *device,
+                                     uint32_t max_texture_dimension,
+                                     std::vector<TextureData> &textures,
+                                     uint32_t bindingLocation)
+    : device(device), bindingLocation(bindingLocation) {
     textureImage = std::make_unique<Image>(*device);
 
     createTextureArray(max_texture_dimension, textures);
@@ -123,9 +123,9 @@ void TextureAttachment::createSampler() {
 
 void TextureAttachment::updateDescriptorSet(uint32_t maxFramesInFlight,
                                             DescriptorSet &descriptorSet) {
-    descriptorSet.updateImageInfo(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                  textureImage->getVkImageView(),
-                                  textureSampler);
+    descriptorSet.updateImageInfo(
+        bindingLocation, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        textureImage->getVkImageView(), textureSampler);
 }
 
 void TextureAttachment::update(uint32_t frameIndex) {}

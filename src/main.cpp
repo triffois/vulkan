@@ -51,8 +51,7 @@ int main(int argc, char *argv[]) {
         UniformAttachment<UniformBufferObject> uniformAttachment(
             engine.getDevice(), uniformUpdator, 0);
 
-        // TODO nonglobal texture managers - this one is certainly possible
-        TextureAttachment textureAttachment = textures.getTextureAttachment();
+        TextureAttachment textureAttachment = textures.getTextureAttachment(1);
 
         model.bind(uniformAttachment);
         model.bind(textureAttachment);

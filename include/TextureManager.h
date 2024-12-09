@@ -33,7 +33,7 @@ class TextureManager {
         return resolutions;
     }
 
-    TextureAttachment getTextureAttachment();
+    TextureAttachment getTextureAttachment(uint32_t bindingLocation);
 
   private:
     Device *device = nullptr;
