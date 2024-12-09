@@ -1,6 +1,7 @@
 #pragma once
 
 #include <list>
+#include <unordered_map>
 
 #include "AppInstance.h"
 #include "AppWindow.h"
@@ -10,86 +11,106 @@
 #include "commonstructs.h"
 
 class Device : public INeedCleanUp {
-    friend struct DeviceMemoryAllocationHandle;
+  friend struct DeviceMemoryAllocationHandle;
 
-  public:
-    void init(const AppWindow *appWindow, const AppInstance *appInstance);
+public:
+  void init(const AppWindow *appWindow, const AppInstance *appInstance);
 
-    Device() = default;
-    ~Device() = default;
+  Device() = default;
 
-    Device(const Device &) = delete;
-    Device(Device &&) = delete;
+  ~Device() = default;
 
-    Device &operator=(const Device &) = delete;
-    Device &operator=(Device &&) = delete;
+  Device(const Device &) = delete;
 
-    void cleanUp(const AppContext &context) override;
-    const VkDevice *getDevice() const;
-    const VkPhysicalDevice *getPhysicalDevice() const;
+  Device(Device &&) = delete;
 
-    QueueFamilyIndices findQueueFamiliesCurrent();
-    SwapChainSupportDetails querySwapChainSupportCurrent();
+  Device &operator=(const Device &) = delete;
 
-    VkResult submitToAvailableGraphicsQueue(const VkSubmitInfo *info,
-                                            VkFence submitFence,
-                                            bool ifWaitIdle = false) const;
-    VkResult submitToAvailablePresentQueue(const VkPresentInfoKHR *info) const;
+  Device &operator=(Device &&) = delete;
 
-    // TODO: move out this bunch into a separate abstraction
-    uint32_t findMemoryType(uint32_t typeFilter,
-                            VkMemoryPropertyFlags properties) const;
+  void cleanUp(const AppContext &context) override;
 
-    VkImageView createImageView(VkImage image, VkFormat format,
-                                VkImageAspectFlags aspectFlags);
-    // to abstract user from any particular memory allocation algorithm, the
-    // 'descriptor' returned to user in the pointer to AllocationInfoCache cast
-    // to void *
-    VkResult
-    allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
-                         const VmaAllocationCreateInfo *allocCreateInfo,
-                         VkBuffer *targetBuf,
-                         DeviceMemoryAllocationHandle *allocationInfo);
-    VkResult allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
-                                 const VmaAllocationCreateInfo *allocCreateInfo,
-                                 VkImage *targetImage,
-                                 DeviceMemoryAllocationHandle *allocationInfo);
+  const VkDevice *getDevice() const;
 
-    VkResult
-    freeAllocationMemoryOnDemand(DeviceMemoryAllocationHandle *allocationInfo);
+  const VkPhysicalDevice *getPhysicalDevice() const;
 
-    VkResult mapMemory(DeviceMemoryAllocationHandle *allocationInfo,
-                       void **ppData) const;
-    VkResult unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const;
-    CommandPool *getGraphicsCommandPool() { return graphicsCommandPool; }
+  QueueFamilyIndices findQueueFamiliesCurrent();
 
-    uint32_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
+  SwapChainSupportDetails querySwapChainSupportCurrent();
 
-  private:
-    void pickPhysicalDevice();
-    void createLogicalDevice();
-    void createAllocator();
+  VkResult submitToAvailableGraphicsQueue(const VkSubmitInfo *info,
+                                          VkFence submitFence,
+                                          bool ifWaitIdle = false) const;
 
-    bool isDeviceSuitable(VkPhysicalDevice device);
-    bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+  VkResult submitToAvailablePresentQueue(const VkPresentInfoKHR *info) const;
 
-    QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
-    SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
-    void freeAllocation(DeviceMemoryAllocation *allocationToFree);
+  // TODO: move out this bunch into a separate abstraction
+  uint32_t findMemoryType(uint32_t typeFilter,
+                          VkMemoryPropertyFlags properties) const;
 
-  private:
-    VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
-    VkDevice device;
-    VkQueue graphicsQueue;
-    VkQueue presentQueue;
-    VmaAllocator deviceMemoryAllocator;
+  VkImageView createImageView(VkImage image, VkFormat format,
+                              VkImageAspectFlags aspectFlags);
 
-    const AppWindow *appWindow;
-    const AppInstance *appInstance;
+  // to abstract user from any particular memory allocation algorithm, the
+  // 'descriptor' returned to user in the pointer to AllocationInfoCache cast
+  // to void *
+  VkResult
+  allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
+                       const VmaAllocationCreateInfo *allocCreateInfo,
+                       VkBuffer *targetBuf,
+                       DeviceMemoryAllocationHandle *allocationInfo);
 
-    CommandPool *graphicsCommandPool;
+  VkResult allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
+                               const VmaAllocationCreateInfo *allocCreateInfo,
+                               VkImage *targetImage,
+                               DeviceMemoryAllocationHandle *allocationInfo);
 
-    std::list<DeviceMemoryAllocation> allocations;
+  VkResult
+  freeAllocationMemoryOnDemand(DeviceMemoryAllocationHandle *allocationInfo);
 
-    static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
+  VkResult mapMemory(DeviceMemoryAllocationHandle *allocationInfo,
+                     void **ppData) const;
+
+  VkResult unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const;
+
+  CommandPool *getGraphicsCommandPool() { return graphicsCommandPool; }
+
+  uint32_t getMaxFramesInFlight() const { return MAX_FRAMES_IN_FLIGHT; }
+
+private:
+  void pickPhysicalDevice();
+
+  void createLogicalDevice();
+
+  void createAllocator();
+
+  bool isDeviceSuitable(VkPhysicalDevice device);
+
+  bool checkDeviceExtensionSupport(VkPhysicalDevice device);
+
+  QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
+
+  SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device);
+
+  void freeAllocation(DeviceMemoryAllocation *allocationToFree);
+
+  AllocationIdentifier generateNewAllocationId();
+
+private:
+  VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
+  VkDevice device;
+  VkQueue graphicsQueue;
+  VkQueue presentQueue;
+  VmaAllocator deviceMemoryAllocator;
+
+  const AppWindow *appWindow;
+  const AppInstance *appInstance;
+
+  CommandPool *graphicsCommandPool;
+
+  std::unordered_map<AllocationIdentifier, DeviceMemoryAllocation, AllocationIdentifier, AllocationIdentifier>
+  allocations;
+  unsigned long int allocationIdCounter{0}; //will overflow someday
+
+  static constexpr uint32_t MAX_FRAMES_IN_FLIGHT = 2;
 };

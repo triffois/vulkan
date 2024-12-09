@@ -8,7 +8,8 @@
 #include "ValidationLayersInfo.h"
 
 const std::vector<const char *> deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME};
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME, VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME
+};
 
 void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
     this->appWindow = appWindow;
@@ -20,8 +21,8 @@ void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
 
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
     graphicsCommandPool =
-        new CommandPool(this, indices.graphicsFamily.value(),
-                        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+            new CommandPool(this, indices.graphicsFamily.value(),
+                            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
 void Device::cleanUp(const AppContext &context) {
@@ -29,7 +30,7 @@ void Device::cleanUp(const AppContext &context) {
 
     std::for_each(allocations.begin(), allocations.end(),
                   [this](auto &allocationToCleanUp) {
-                      freeAllocation(&allocationToCleanUp);
+                      freeAllocation(&allocationToCleanUp.second);
                   });
 
     vmaDestroyAllocator(deviceMemoryAllocator);
@@ -63,7 +64,7 @@ void Device::pickPhysicalDevice() {
     vkEnumeratePhysicalDevices(*appInstance->getInstance(), &deviceCount,
                                devices.data());
 
-    for (const auto &device : devices) {
+    for (const auto &device: devices) {
         if (isDeviceSuitable(device)) {
             physicalDevice = device;
             break;
@@ -79,11 +80,13 @@ void Device::createLogicalDevice() {
     QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(),
-                                              indices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {
+        indices.graphicsFamily.value(),
+        indices.presentFamily.value()
+    };
 
     float queuePriority = 1.0f;
-    for (uint32_t queueFamily : uniqueQueueFamilies) {
+    for (uint32_t queueFamily: uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo{};
         queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
         queueCreateInfo.queueFamilyIndex = queueFamily;
@@ -94,7 +97,7 @@ void Device::createLogicalDevice() {
 
     VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeature{};
     dynamicRenderingFeature.sType =
-        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR;
     dynamicRenderingFeature.dynamicRendering = VK_TRUE;
 
     VkPhysicalDeviceFeatures deviceFeatures{};
@@ -105,18 +108,18 @@ void Device::createLogicalDevice() {
     createInfo.pNext = &dynamicRenderingFeature;
 
     createInfo.queueCreateInfoCount =
-        static_cast<uint32_t>(queueCreateInfos.size());
+            static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
 
     createInfo.pEnabledFeatures = &deviceFeatures;
 
     createInfo.enabledExtensionCount =
-        static_cast<uint32_t>(deviceExtensions.size());
+            static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
 
     if (enableValidationLayers) {
         createInfo.enabledLayerCount =
-            static_cast<uint32_t>(validationLayers.size());
+                static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
     } else {
         createInfo.enabledLayerCount = 0;
@@ -151,7 +154,7 @@ bool Device::isDeviceSuitable(VkPhysicalDevice device) {
     bool swapChainAdequate = false;
     if (extensionsSupported) {
         SwapChainSupportDetails swapChainSupport =
-            querySwapChainSupport(device);
+                querySwapChainSupport(device);
         swapChainAdequate = !swapChainSupport.formats.empty() &&
                             !swapChainSupport.presentModes.empty();
     }
@@ -175,7 +178,7 @@ bool Device::checkDeviceExtensionSupport(VkPhysicalDevice device) {
     std::set<std::string> requiredExtensions(deviceExtensions.begin(),
                                              deviceExtensions.end());
 
-    for (const auto &extension : availableExtensions) {
+    for (const auto &extension: availableExtensions) {
         requiredExtensions.erase(extension.extensionName);
     }
 
@@ -194,7 +197,7 @@ QueueFamilyIndices Device::findQueueFamilies(VkPhysicalDevice device) {
                                              queueFamilies.data());
 
     int i = 0;
-    for (const auto &queueFamily : queueFamilies) {
+    for (const auto &queueFamily: queueFamilies) {
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
             indices.graphicsFamily = i;
         }
@@ -267,6 +270,13 @@ void Device::freeAllocation(DeviceMemoryAllocation *allocationToFree) {
     }
 }
 
+AllocationIdentifier Device::generateNewAllocationId() {
+    auto newId = AllocationIdentifier();
+    newId.id = allocationIdCounter++;
+
+    return newId;
+}
+
 VkResult Device::submitToAvailableGraphicsQueue(const VkSubmitInfo *info,
                                                 VkFence submitFence,
                                                 bool ifWaitIdle) const {
@@ -286,16 +296,23 @@ Device::allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
                              const VmaAllocationCreateInfo *allocCreateInfo,
                              VkBuffer *targetBuf,
                              DeviceMemoryAllocationHandle *allocationInfo) {
+    assert(allocationInfo != nullptr);
 
     DeviceMemoryAllocation newAllocationInfo{};
     newAllocationInfo.allocatedObject.emplace<0>(*targetBuf);
     auto res =
-        vmaCreateBuffer(deviceMemoryAllocator, bufCreateInfo, allocCreateInfo,
-                        targetBuf, &newAllocationInfo.allocation, nullptr);
+            vmaCreateBuffer(deviceMemoryAllocator, bufCreateInfo, allocCreateInfo,
+                            targetBuf, &newAllocationInfo.allocation, nullptr);
 
     if (res == VK_SUCCESS) {
-        allocations.emplace_back(newAllocationInfo);
-        allocationInfo->allocationInfo = &allocations.back();
+        auto newId = generateNewAllocationId();
+
+        allocations.insert(std::make_pair(newId, newAllocationInfo));
+        allocationInfo->identifier = newId;
+
+#ifndef NDEBUG
+        std::cout << "ID for new buffer allocation :" << newId.id << std::endl;
+#endif
     }
 
     return res;
@@ -306,16 +323,21 @@ Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
                             const VmaAllocationCreateInfo *allocCreateInfo,
                             VkImage *targetImage,
                             DeviceMemoryAllocationHandle *allocationInfo) {
-
     DeviceMemoryAllocation newAllocationInfo{};
     newAllocationInfo.allocatedObject.emplace<1>(*targetImage);
     auto res =
-        vmaCreateImage(deviceMemoryAllocator, imgCreateInfo, allocCreateInfo,
-                       targetImage, &newAllocationInfo.allocation, nullptr);
+            vmaCreateImage(deviceMemoryAllocator, imgCreateInfo, allocCreateInfo,
+                           targetImage, &newAllocationInfo.allocation, nullptr);
 
     if (res == VK_SUCCESS) {
-        allocations.emplace_back(newAllocationInfo);
-        allocationInfo->allocationInfo = &allocations.back();
+        auto newId = generateNewAllocationId();
+
+        allocations.insert(std::make_pair(newId, newAllocationInfo));
+        allocationInfo->identifier = newId;
+
+#ifndef NDEBUG
+        std::cout << "ID for new image allocation :" << newId.id << std::endl;
+#endif
     }
 
     return res;
@@ -323,32 +345,33 @@ Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
 
 VkResult Device::mapMemory(DeviceMemoryAllocationHandle *allocationInfo,
                            void **ppData) const {
+    if (allocations.find(allocationInfo->identifier) == allocations.end())
+        throw std::runtime_error("Attempted to map unallocated memory!");
+
     return vmaMapMemory(deviceMemoryAllocator,
-                        allocationInfo->allocationInfo->allocation, ppData);
+                        allocations.at(allocationInfo->identifier).allocation, ppData);
 }
 
 VkResult
 Device::unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const {
+    if (allocations.find(allocationInfo->identifier) == allocations.end())
+        throw std::runtime_error("Attempted to unmap unallocated memory!");
+
     vmaUnmapMemory(deviceMemoryAllocator,
-                   allocationInfo->allocationInfo->allocation);
+                   allocations.at(allocationInfo->identifier).allocation);
     return VK_SUCCESS;
 }
 
 VkResult Device::freeAllocationMemoryOnDemand(
     DeviceMemoryAllocationHandle *allocationInfo) {
-    // TODO: this is painfully slow. May want to replace it in the time to come
-    auto allocationToFreeItr = std::find(allocations.begin(), allocations.end(),
-                                         *(allocationInfo->allocationInfo));
+    if (allocations.find(allocationInfo->identifier) == allocations.end())
+        throw std::runtime_error("Attempted to free unallocated memory!");
 
-    if (allocationToFreeItr != allocations.end()) {
-        freeAllocation(allocationInfo->allocationInfo);
-        allocations.erase(allocationToFreeItr);
-    }
 #ifndef NDEBUG
-    else {
-        std::cout << "Failed to free VMA memory on demand" << std::endl;
-    }
+    std::cout << "Allocation ID to free:" << allocationInfo->identifier.id << std::endl;
 #endif
+
+    freeAllocation(&allocations.at(allocationInfo->identifier));
 
     return VK_SUCCESS;
 }
@@ -383,7 +406,7 @@ uint32_t Device::findMemoryType(uint32_t typeFilter,
     for (uint32_t i = 0; i < memProperties.memoryTypeCount; i++) {
         if ((typeFilter & (1 << i)) &&
             (memProperties.memoryTypes[i].propertyFlags & properties) ==
-                properties) {
+            properties) {
             return i;
         }
     }
