@@ -28,7 +28,7 @@ void main() {
     vertexPos = inModel * vec4(inPosition, 1.0);
     gl_Position = ubo.proj * ubo.view * vertexPos;
 
-    normalVector = vec3(inModel * vec4(inNormalVector, 1.0));
+    normalVector = vec3(inModel * vec4(inNormalVector, 0.0));
 
     fragColor = inColor;
     fragTexCoord = inTexCoord;
