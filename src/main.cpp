@@ -12,7 +12,7 @@
 int main(int argc, char *argv[]) {
     if (argc != 2) {
         std::cerr << "Usage: " << argv[0] << " <path_to_gltf_file>"
-                << std::endl;
+                  << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -34,7 +34,7 @@ int main(int argc, char *argv[]) {
             ubo.view = camera->GetViewMatrix();
             ubo.proj = glm::perspective(glm::radians(camera->getZoom()),
                                         swapChainExtent.width /
-                                        (float) swapChainExtent.height,
+                                            (float)swapChainExtent.height,
                                         0.1f, 1000.0f);
             ubo.proj[1][1] *= -1;
 
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]) {
         model.bind(staticLighting.getLightingBuffer());
 
         auto renderable =
-                engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");
+            engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");
 
         // Main render loop
         while (engine.running()) {

@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 
 class DescriptorPool {
-public:
+  public:
     void
     init(VkDevice device,
          std::unordered_map<VkDescriptorType, uint32_t> &descriptorTypeCounts,
@@ -14,7 +14,7 @@ public:
 
     VkDescriptorPool getPool() const { return descriptorPool; }
 
-private:
+  private:
     VkDevice device;
     VkDescriptorPool descriptorPool;
 };

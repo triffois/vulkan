@@ -2,13 +2,14 @@
 #include <stdexcept>
 #include <vector>
 
-void DescriptorPool::init(VkDevice device,
-                          std::unordered_map<VkDescriptorType, uint32_t> &descriptorTypeCounts,
-                          uint32_t maxSets) {
+void DescriptorPool::init(
+    VkDevice device,
+    std::unordered_map<VkDescriptorType, uint32_t> &descriptorTypeCounts,
+    uint32_t maxSets) {
     this->device = device;
 
     std::vector<VkDescriptorPoolSize> poolSizes;
-    for (auto &pair: descriptorTypeCounts) {
+    for (auto &pair : descriptorTypeCounts) {
         VkDescriptorPoolSize poolSize{};
         poolSize.type = pair.first;
         poolSize.descriptorCount = pair.second * maxSets;

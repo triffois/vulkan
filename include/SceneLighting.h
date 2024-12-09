@@ -7,7 +7,7 @@
 #define NUM_FRAG_SHADER_LIGHTS 3
 
 struct LightsArray {
-  SimpleLightSource lights[NUM_FRAG_SHADER_LIGHTS];
+    SimpleLightSource lights[NUM_FRAG_SHADER_LIGHTS];
 };
 
 class SceneLighting {
