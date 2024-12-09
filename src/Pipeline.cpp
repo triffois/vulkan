@@ -4,6 +4,7 @@
 #include <GLFW/glfw3.h>
 #include <cstring>
 #include <fstream>
+#include <functional>
 #include <stdexcept>
 
 #include "commonstructs.h"
@@ -11,8 +12,10 @@
 #include <stb_image.h>
 
 Pipeline::Pipeline(const std::string &vertShaderPath,
-                   const std::string &fragShaderPath)
-    : vertShaderPath(vertShaderPath), fragShaderPath(fragShaderPath) {}
+                   const std::string &fragShaderPath,
+                   std::vector<std::reference_wrapper<IAttachment>> attachments)
+    : vertShaderPath(vertShaderPath), fragShaderPath(fragShaderPath),
+      attachments(std::move(attachments)) {}
 
 void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
                     uint32_t maxFramesInFlight) {

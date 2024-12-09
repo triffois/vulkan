@@ -8,13 +8,12 @@
 #include "MeshManager.h"
 #include "PipelineManager.h"
 #include "RenderBatch.h"
-#include "UniformAttachment.h"
 #include <memory>
 
 class RenderPass {
   public:
     RenderPass(GlobalResources *globalResources, const RenderBatch &batch,
-               uint32_t maxFramesInFlight, Camera &camera);
+               uint32_t maxFramesInFlight);
     ~RenderPass();
 
     // Prevent copying
@@ -34,14 +33,10 @@ class RenderPass {
         return descriptorSet.getSet(frameIndex);
     }
 
-    void update(uint32_t currentFrame, const Camera &camera,
-                const VkExtent2D &swapChainExtent);
+    void update(uint32_t currentFrame);
 
   private:
     void createInstanceBuffer(const RenderBatch &batch);
-    void updateDescriptors(uint32_t maxFramesInFlight);
-
-    std::unique_ptr<UniformAttachment> uniformAttachment;
 
     GlobalResources *globalResources;
     MeshID meshId;

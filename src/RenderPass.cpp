@@ -4,22 +4,20 @@
 #include <cstring>
 
 RenderPass::RenderPass(GlobalResources *globalResources,
-                       const RenderBatch &batch, uint32_t maxFramesInFlight,
-                       Camera &camera)
+                       const RenderBatch &batch, uint32_t maxFramesInFlight)
     : globalResources(globalResources), meshId(batch.meshId),
       pipelineId(batch.pipelineId) {
-    uniformAttachment =
-        std::make_unique<UniformAttachment>(globalResources, camera);
-    uniformAttachment->init(maxFramesInFlight);
-
     createInstanceBuffer(batch);
     auto device = globalResources->getDevice();
-    auto pipeline =
+    auto &pipeline =
         globalResources->getPipelineManager().getPipeline(pipelineId);
     descriptorPool.init(*device->getDevice(), maxFramesInFlight);
     descriptorSet.init(*device->getDevice(), descriptorPool,
                        pipeline.getDescriptorLayout(), maxFramesInFlight);
-    updateDescriptors(maxFramesInFlight);
+
+    for (auto &attachment : pipeline.getAttachments()) {
+        attachment.get().updateDescriptorSet(maxFramesInFlight, descriptorSet);
+    }
 }
 
 RenderPass::~RenderPass() {
@@ -53,16 +51,10 @@ void RenderPass::createInstanceBuffer(const RenderBatch &batch) {
     instanceBuffer->copyFrom(stagingBuffer, bufferSize);
 }
 
-void RenderPass::updateDescriptors(uint32_t maxFramesInFlight) {
-    // Update uniform buffer descriptors
-    uniformAttachment->updateDescriptorSet(maxFramesInFlight, descriptorSet);
-    auto &textureAttachment =
-        globalResources->getTextureManager().getTextureAttachment();
-
-    textureAttachment.updateDescriptorSet(maxFramesInFlight, descriptorSet);
-}
-
-void RenderPass::update(uint32_t currentFrame, const Camera &camera,
-                        const VkExtent2D &swapChainExtent) {
-    uniformAttachment->update(currentFrame);
+void RenderPass::update(uint32_t currentFrame) {
+    for (auto &attachment : globalResources->getPipelineManager()
+                                .getPipeline(pipelineId)
+                                .getAttachments()) {
+        attachment.get().update(currentFrame);
+    }
 }

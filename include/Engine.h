@@ -36,8 +36,9 @@ class Engine {
 
     GlobalResources &getGlobalResources() { return globalResources; }
     Device *getDevice() { return &appDevice; }
-    PipelineID createPipeline(const std::string &vertShaderPath,
-                              const std::string &fragShaderPath);
+    PipelineID createPipeline(
+        const std::string &vertShaderPath, const std::string &fragShaderPath,
+        std::vector<std::reference_wrapper<IAttachment>> attachments);
 
     void prepareResources();
 

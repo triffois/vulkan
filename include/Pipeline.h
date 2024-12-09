@@ -2,6 +2,8 @@
 
 #include "DescriptorLayout.h"
 #include "Device.h"
+#include "IAttachment.h"
+#include <memory>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -9,7 +11,12 @@
 class Pipeline {
   public:
     Pipeline(const std::string &vertShaderPath,
-             const std::string &fragShaderPath);
+             const std::string &fragShaderPath,
+             std::vector<std::reference_wrapper<IAttachment>> attachments);
+
+    // Make uncopyable
+    Pipeline(const Pipeline &) = delete;
+    Pipeline &operator=(const Pipeline &) = delete;
 
     void init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
               uint32_t maxFramesInFlight);
@@ -18,6 +25,10 @@ class Pipeline {
 
     VkPipeline getPipeline() const { return graphicsPipeline; }
     VkPipelineLayout getLayout() const { return pipelineLayout; }
+    const std::vector<std::reference_wrapper<IAttachment>> &
+    getAttachments() const {
+        return attachments;
+    }
     DescriptorLayout &getDescriptorLayout() { return descriptorLayout; }
 
     void prepareForRendering() const;
@@ -27,6 +38,7 @@ class Pipeline {
     VkPipeline graphicsPipeline;
     VkPipelineLayout pipelineLayout;
 
+    std::vector<std::reference_wrapper<IAttachment>> attachments;
     DescriptorLayout descriptorLayout;
 
     std::string vertShaderPath;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "Camera.h"
 #include "RenderBatch.h"
 #include "RenderPass.h"
 #include <cstring>
@@ -22,7 +21,7 @@ class Scene {
 
     // Called once before rendering starts - creates device-local instance
     // buffers
-    void prepareForRendering(Camera &camera);
+    void prepareForRendering();
     std::vector<RenderPass> &getRenderPasses() { return passes; }
 
   private:

@@ -59,12 +59,12 @@ void Render::recordRenderingCommands(Scene &scene) {
 void Render::recordRenderingCommands(RenderPass &pass) {
     auto &swapChain = globalResources->getSwapChain();
 
-    auto pipeline =
+    auto &pipeline =
         globalResources->getPipelineManager().getPipeline(pass.getPipelineId());
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       pipeline.getPipeline());
 
-    pass.update(currentFrame, camera, swapChain.getExtent());
+    pass.update(currentFrame);
 
     VkViewport viewport{};
     viewport.x = 0.0f;
