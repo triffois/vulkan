@@ -53,12 +53,13 @@ void RenderPass::createInstanceBuffer(const RenderBatch &batch) {
 void RenderPass::updateDescriptors(uint32_t maxFramesInFlight) {
     // Update uniform buffer descriptors
     uniformAttachment.updateDescriptorSet(maxFramesInFlight, descriptorSet);
+    auto &textureAttachment =
+        globalResources->getTextureManager().getTextureAttachment();
 
     // Update texture descriptors
-    descriptorSet.updateImageInfo(
-        1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        globalResources->getTextureManager().getTextureArrayView(),
-        globalResources->getTextureManager().getSampler());
+    descriptorSet.updateImageInfo(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                  textureAttachment.getTextureArrayView(),
+                                  textureAttachment.getSampler());
 }
 
 void RenderPass::update(uint32_t currentFrame, const Camera &camera,

@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Device.h"
-#include "Image.h"
+#include "TextureAttachment.h"
 #include "TextureData.h"
-#include <memory>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -19,10 +18,6 @@ class TextureManager {
 
     TextureID registerTexture(const TextureData &textureData);
 
-    VkSampler getSampler() const { return textureSampler; }
-    VkImageView getTextureArrayView() const {
-        return textureImage->getVkImageView();
-    }
     void init(Device *device);
     void prepareResources();
     void cleanup();
@@ -41,16 +36,13 @@ class TextureManager {
         return resolutions;
     }
 
+    TextureAttachment &getTextureAttachment() { return textureAttachment; }
+
   private:
-    void createTextureArray();
-    void updateTextureArray();
-    void createSampler();
+    TextureAttachment textureAttachment;
 
     Device *device = nullptr;
     std::vector<TextureData> textures;
-
-    std::unique_ptr<Image> textureImage;
-    VkSampler textureSampler = VK_NULL_HANDLE;
 
     static constexpr uint32_t MAX_TEXTURE_COUNT = 256;
     static constexpr uint32_t MAX_TEXTURE_DIMENSION = 1024;
