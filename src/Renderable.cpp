@@ -1,11 +1,11 @@
 #include "Renderable.h"
 
 Renderable::Renderable(GlobalResources *resources, Model &model,
-                       std::string &vertPath, std::string &fragPath)
+                       PipelineSettings &settings)
     : resources(resources) {
     auto device = resources->getDevice();
     DescriptorLayout descriptorLayout(*device->getDevice(),
-                                      model.getAttachments());
+                                      settings.getAttachments());
 
     // TODO: move things like this into the resources class
     auto maxFramesInFlight = resources->getDevice()->getMaxFramesInFlight();
@@ -14,8 +14,8 @@ Renderable::Renderable(GlobalResources *resources, Model &model,
     VkFormat depthFormat = resources->getSwapChain().findDepthFormat();
 
     auto pipelineId = resources->getPipelineManager().createPipeline(
-        descriptorLayout, colorFormat, depthFormat, maxFramesInFlight, vertPath,
-        fragPath, model.getAttachments());
+        descriptorLayout, colorFormat, depthFormat, maxFramesInFlight,
+        settings);
 
     for (auto &batch : model.getBatches()) {
         passes.emplace_back(resources, batch, pipelineId, maxFramesInFlight);

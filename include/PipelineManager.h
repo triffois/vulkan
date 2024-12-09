@@ -2,6 +2,7 @@
 
 #include "Device.h"
 #include "Pipeline.h"
+#include "PipelineSettings.h"
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -20,11 +21,10 @@ class PipelineManager {
     void init(Device *device);
     void cleanup();
 
-    PipelineID createPipeline(
-        DescriptorLayout descriptorLayout, VkFormat colorFormat,
-        VkFormat depthFormat, uint32_t maxFramesInFlight,
-        const std::string &vertPath, const std::string &fragPath,
-        std::vector<std::reference_wrapper<IAttachment>> attachments);
+    PipelineID createPipeline(DescriptorLayout descriptorLayout,
+                              VkFormat colorFormat, VkFormat depthFormat,
+                              uint32_t maxFramesInFlight,
+                              PipelineSettings &settings);
 
     Pipeline &getPipeline(const PipelineID &id) const;
 

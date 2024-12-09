@@ -3,6 +3,7 @@
 #include "DescriptorLayout.h"
 #include "Device.h"
 #include "IAttachment.h"
+#include "PipelineSettings.h"
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -11,9 +12,7 @@ class Pipeline {
   public:
     Pipeline(Device *device, DescriptorLayout descriptorLayout,
              VkFormat colorFormat, VkFormat depthFormat,
-             uint32_t maxFramesInFlight, const std::string &vertShaderPath,
-             const std::string &fragShaderPath,
-             std::vector<std::reference_wrapper<IAttachment>> attachments);
+             uint32_t maxFramesInFlight, PipelineSettings &settings);
 
     // Make uncopyable
     Pipeline(const Pipeline &) = delete;
