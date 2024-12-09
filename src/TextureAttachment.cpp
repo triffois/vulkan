@@ -1,9 +1,13 @@
 #include "TextureAttachment.h"
 #include "Buffer.h"
 
-void TextureAttachment::init(Device *device) {
+void TextureAttachment::init(Device *device, uint32_t max_texture_dimension,
+                             std::vector<TextureData> &textures) {
     this->device = device;
     textureImage = std::make_unique<Image>(*device);
+
+    createTextureArray(max_texture_dimension, textures);
+    createSampler();
 }
 
 void TextureAttachment::cleanup() {
@@ -113,4 +117,10 @@ void TextureAttachment::createSampler() {
                         &textureSampler) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create texture sampler");
     }
+}
+
+void TextureAttachment::updateDescriptorSet(uint32_t maxFramesInFlight,
+                                            DescriptorSet &descriptorSet) {
+    descriptorSet.updateImageInfo(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                  getTextureArrayView(), getSampler());
 }

@@ -1,10 +1,7 @@
 #include "TextureManager.h"
 #include <stdexcept>
 
-void TextureManager::init(Device *device) {
-    this->device = device;
-    textureAttachment.init(device);
-}
+void TextureManager::init(Device *device) { this->device = device; }
 
 void TextureManager::cleanup() { textureAttachment.cleanup(); }
 
@@ -31,7 +28,6 @@ void TextureManager::prepareResources() {
     if (resourcesPrepared) {
         std::runtime_error("Resources have already been prepared");
     }
-    textureAttachment.createTextureArray(MAX_TEXTURE_DIMENSION, textures);
-    textureAttachment.createSampler();
+    textureAttachment.init(device, MAX_TEXTURE_DIMENSION, textures);
     resourcesPrepared = true;
 }
