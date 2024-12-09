@@ -20,7 +20,6 @@
 #include "GlobalResources.h"
 #include "Pipeline.h"
 #include "Render.h"
-#include "SwapChain.h"
 
 class Engine {
   public:
@@ -48,7 +47,6 @@ class Engine {
     Device appDevice;
     GlobalResources globalResources;
     VkDevice device;
-    std::unique_ptr<SwapChain> swapChain;
     std::vector<Pipeline> pipelines;
 
     EnginePeripheralsManager peripheralsManager;

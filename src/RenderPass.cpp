@@ -4,12 +4,15 @@
 #include <cstring>
 
 RenderPass::RenderPass(GlobalResources *globalResources,
-                       const RenderBatch &batch, uint32_t maxFramesInFlight)
+                       const RenderBatch &batch, uint32_t maxFramesInFlight,
+                       Camera &camera)
     : globalResources(globalResources), meshId(batch.meshId),
-      pipelineId(batch.pipelineId), uniformAttachment(globalResources) {
+      pipelineId(batch.pipelineId) {
+    uniformAttachment =
+        std::make_unique<UniformAttachment>(globalResources, camera);
+    uniformAttachment->init(maxFramesInFlight);
 
     createInstanceBuffer(batch);
-    uniformAttachment.init(maxFramesInFlight);
     auto device = globalResources->getDevice();
     auto pipeline =
         globalResources->getPipelineManager().getPipeline(pipelineId);
@@ -52,7 +55,7 @@ void RenderPass::createInstanceBuffer(const RenderBatch &batch) {
 
 void RenderPass::updateDescriptors(uint32_t maxFramesInFlight) {
     // Update uniform buffer descriptors
-    uniformAttachment.updateDescriptorSet(maxFramesInFlight, descriptorSet);
+    uniformAttachment->updateDescriptorSet(maxFramesInFlight, descriptorSet);
     auto &textureAttachment =
         globalResources->getTextureManager().getTextureAttachment();
 
@@ -61,5 +64,5 @@ void RenderPass::updateDescriptors(uint32_t maxFramesInFlight) {
 
 void RenderPass::update(uint32_t currentFrame, const Camera &camera,
                         const VkExtent2D &swapChainExtent) {
-    uniformAttachment.update(currentFrame, camera, swapChainExtent);
+    uniformAttachment->update(currentFrame);
 }

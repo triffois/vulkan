@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Buffer.h"
+#include "Camera.h"
 #include "DescriptorPool.h"
 #include "DescriptorSet.h"
 #include "GlobalResources.h"
@@ -13,7 +14,7 @@
 class RenderPass {
   public:
     RenderPass(GlobalResources *globalResources, const RenderBatch &batch,
-               uint32_t maxFramesInFlight);
+               uint32_t maxFramesInFlight, Camera &camera);
     ~RenderPass();
 
     // Prevent copying
@@ -40,7 +41,7 @@ class RenderPass {
     void createInstanceBuffer(const RenderBatch &batch);
     void updateDescriptors(uint32_t maxFramesInFlight);
 
-    UniformAttachment uniformAttachment;
+    std::unique_ptr<UniformAttachment> uniformAttachment;
 
     GlobalResources *globalResources;
     MeshID meshId;

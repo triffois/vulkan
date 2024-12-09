@@ -4,21 +4,25 @@
 #include "Camera.h"
 #include "DescriptorSet.h"
 #include "GlobalResources.h"
+#include "IAttachment.h"
 #include <memory>
 #include <vector>
 
-class UniformAttachment {
+class UniformAttachment : public IAttachment {
   public:
-    UniformAttachment(GlobalResources *globalResources);
+    UniformAttachment(GlobalResources *globalResources, Camera &camera);
+    ~UniformAttachment() override = default;
 
     void init(uint32_t maxFramesInFlight);
+
+    // Implement interface methods
     void updateDescriptorSet(uint32_t maxFramesInFlight,
-                             DescriptorSet &descriptorSet);
-    void update(uint32_t currentFrame, const Camera &camera,
-                const VkExtent2D &swapChainExtent);
+                             DescriptorSet &descriptorSet) override;
+    void update(uint32_t frameIndex) override;
 
   private:
     GlobalResources *globalResources;
+    Camera *camera;
 
     // Uniform buffer resources
     std::vector<std::unique_ptr<Buffer>> uniformBuffers;

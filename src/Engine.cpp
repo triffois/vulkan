@@ -14,8 +14,8 @@ Render Engine::startRender() {
     vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
                     UINT64_MAX);
 
-    uint32_t imageIndex =
-        swapChain->acquireNextImage(imageAvailableSemaphores[currentFrame]);
+    uint32_t imageIndex = globalResources.getSwapChain().acquireNextImage(
+        imageAvailableSemaphores[currentFrame]);
 
     vkResetFences(device, 1, &inFlightFences[currentFrame]);
 
@@ -26,10 +26,10 @@ Render Engine::startRender() {
         commandBuffers[currentFrame]->getCommandBuffer();
 
     // Transition image layouts using SwapChain methods
-    swapChain->transitionImageLayout(VK_IMAGE_LAYOUT_UNDEFINED,
-                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                     imageIndex, currentCmdBuffer);
-    swapChain->transitionDepthImageLayout(
+    globalResources.getSwapChain().transitionImageLayout(
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        imageIndex, currentCmdBuffer);
+    globalResources.getSwapChain().transitionDepthImageLayout(
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, currentCmdBuffer);
 
@@ -37,7 +37,7 @@ Render Engine::startRender() {
     peripheralsManager.updatePeripheralsOnFrame();
     processKeyboardInput();
 
-    return Render(&globalResources, swapChain.get(),
+    return Render(&globalResources,
                   commandBuffers[currentFrame]->getCommandBuffer(), imageIndex,
                   currentFrame, imageAvailableSemaphores[currentFrame],
                   renderFinishedSemaphores[currentFrame],
@@ -50,7 +50,7 @@ void Engine::finishRender(Render &render) {
     // TODO: fix semaphores staying signaled when window is resized
     if (needsRecreation || framebufferResized) {
         framebufferResized = false;
-        swapChain->handleResizing();
+        globalResources.getSwapChain().handleResizing();
     }
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -110,20 +110,15 @@ void Engine::initVulkan() {
     appInstance.setAppDevice(appDevice.getDevice());
     device = *appDevice.getDevice();
 
-    SwapChainSupportDetails swapChainSupport =
-        appDevice.querySwapChainSupportCurrent();
-    swapChain = std::make_unique<SwapChain>(&appDevice, &appWindow);
-
     createCommandBuffers();
     createSyncObjects();
 
     // Initialize global resources
-    globalResources.init(&appDevice);
+    globalResources.init(&appDevice, &appWindow);
 }
 
 void Engine::cleanup() {
     globalResources.cleanup();
-    swapChain->cleanup();
 
     // vkDestroyImage(device, textureImage, nullptr);
     // vkFreeMemory(device, textureImageMemory, nullptr);
@@ -184,7 +179,4 @@ PipelineID Engine::createPipeline(const std::string &vertShaderPath,
     return manager.createPipeline(vertShaderPath, fragShaderPath);
 }
 
-void Engine::prepareResources() {
-    globalResources.prepareResources(swapChain->getImageFormat(),
-                                     swapChain->findDepthFormat());
-}
+void Engine::prepareResources() { globalResources.prepareResources(); }

@@ -122,5 +122,8 @@ void TextureAttachment::createSampler() {
 void TextureAttachment::updateDescriptorSet(uint32_t maxFramesInFlight,
                                             DescriptorSet &descriptorSet) {
     descriptorSet.updateImageInfo(1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                  getTextureArrayView(), getSampler());
+                                  textureImage->getVkImageView(),
+                                  textureSampler);
 }
+
+void TextureAttachment::update(uint32_t frameIndex) {}

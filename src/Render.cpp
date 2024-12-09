@@ -1,17 +1,17 @@
 #include "Render.h"
 #include <stdexcept>
 
-Render::Render(GlobalResources *globalResources, SwapChain *swapChain,
-               VkCommandBuffer commandBuffer, uint32_t imageIndex,
-               uint32_t currentFrame, VkSemaphore imageAvailableSemaphore,
+Render::Render(GlobalResources *globalResources, VkCommandBuffer commandBuffer,
+               uint32_t imageIndex, uint32_t currentFrame,
+               VkSemaphore imageAvailableSemaphore,
                VkSemaphore renderFinishedSemaphore, VkFence inFlightFence,
                Camera &camera)
-    : globalResources(globalResources), swapChain(swapChain),
-      commandBuffer(commandBuffer), imageIndex(imageIndex),
-      currentFrame(currentFrame),
+    : globalResources(globalResources), commandBuffer(commandBuffer),
+      imageIndex(imageIndex), currentFrame(currentFrame),
       imageAvailableSemaphore(imageAvailableSemaphore),
       renderFinishedSemaphore(renderFinishedSemaphore),
       inFlightFence(inFlightFence), camera(camera) {
+    auto &swapChain = globalResources->getSwapChain();
 
     // Setup rendering info
     VkRenderingAttachmentInfoKHR colorAttachmentInfo{};
@@ -19,7 +19,7 @@ Render::Render(GlobalResources *globalResources, SwapChain *swapChain,
     colorAttachmentInfo.clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
     colorAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentInfo.imageView = swapChain->getImageView(imageIndex);
+    colorAttachmentInfo.imageView = swapChain.getImageView(imageIndex);
     colorAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
 
     VkRenderingAttachmentInfoKHR depthAttachmentInfo{};
@@ -27,7 +27,7 @@ Render::Render(GlobalResources *globalResources, SwapChain *swapChain,
     depthAttachmentInfo.clearValue.depthStencil = {1.0f, 0};
     depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    depthAttachmentInfo.imageView = swapChain->getDepthImageView();
+    depthAttachmentInfo.imageView = swapChain.getDepthImageView();
     depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL_KHR;
 
     VkRenderingInfoKHR renderingInfo{};
@@ -37,7 +37,7 @@ Render::Render(GlobalResources *globalResources, SwapChain *swapChain,
     renderingInfo.pDepthAttachment = &depthAttachmentInfo;
     renderingInfo.layerCount = 1;
     renderingInfo.renderArea.offset = {0, 0};
-    renderingInfo.renderArea.extent = swapChain->getExtent();
+    renderingInfo.renderArea.extent = swapChain.getExtent();
 
     vkCmdBeginRendering(commandBuffer, &renderingInfo);
 }
@@ -57,25 +57,27 @@ void Render::recordRenderingCommands(Scene &scene) {
 }
 
 void Render::recordRenderingCommands(RenderPass &pass) {
+    auto &swapChain = globalResources->getSwapChain();
+
     auto pipeline =
         globalResources->getPipelineManager().getPipeline(pass.getPipelineId());
-
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                       pipeline.getPipeline());
-    pass.update(currentFrame, camera, swapChain->getExtent());
+
+    pass.update(currentFrame, camera, swapChain.getExtent());
 
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
-    viewport.width = static_cast<float>(swapChain->getExtent().width);
-    viewport.height = static_cast<float>(swapChain->getExtent().height);
+    viewport.width = static_cast<float>(swapChain.getExtent().width);
+    viewport.height = static_cast<float>(swapChain.getExtent().height);
     viewport.minDepth = 0.0f;
     viewport.maxDepth = 1.0f;
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
     scissor.offset = {0, 0};
-    scissor.extent = swapChain->getExtent();
+    scissor.extent = swapChain.getExtent();
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     auto mesh = globalResources->getMeshManager().getMesh(pass.getMeshId());
@@ -128,13 +130,14 @@ bool Render::finish() {
     if (isFinished) {
         throw std::runtime_error("Render is already finished!");
     }
+    auto &swapChain = globalResources->getSwapChain();
 
     vkCmdEndRendering(commandBuffer);
 
     // Use SwapChain's transition method
-    swapChain->transitionImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                                     VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-                                     imageIndex, commandBuffer);
+    swapChain.transitionImageLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                    VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, imageIndex,
+                                    commandBuffer);
 
     if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
         throw std::runtime_error("Failed to record command buffer!");
@@ -148,7 +151,7 @@ bool Render::finish() {
     presentInfo.waitSemaphoreCount = 1;
     presentInfo.pWaitSemaphores = &renderFinishedSemaphore;
 
-    VkSwapchainKHR swapChains[] = {swapChain->getSwapChain()};
+    VkSwapchainKHR swapChains[] = {swapChain.getSwapChain()};
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;

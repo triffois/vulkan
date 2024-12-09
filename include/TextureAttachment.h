@@ -1,24 +1,20 @@
 #pragma once
 
+#include "IAttachment.h"
 #include "DescriptorSet.h"
 #include "Device.h"
 #include "Image.h"
 #include "TextureData.h"
 #include <memory>
 
-class TextureAttachment {
+class TextureAttachment : public IAttachment {
   public:
     void init(Device *device, uint32_t max_texture_dimension,
               std::vector<TextureData> &textures);
     void cleanup();
 
-    VkSampler getSampler() const { return textureSampler; }
-    VkImageView getTextureArrayView() const {
-        return textureImage->getVkImageView();
-    }
-
-    void updateDescriptorSet(uint32_t maxFramesInFlight,
-                             DescriptorSet &descriptorSet);
+    void updateDescriptorSet(uint32_t maxFramesInFlight, DescriptorSet &descriptorSet) override;
+    void update(uint32_t frameIndex) override;
 
   private:
     Device *device = nullptr;

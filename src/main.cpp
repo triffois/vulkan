@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
         // Prepare scene resources before rendering
         engine.prepareResources();
-        scene.prepareForRendering();
+        scene.prepareForRendering(*engine.getCamera());
 
         // Main render loop
         while (engine.running()) {

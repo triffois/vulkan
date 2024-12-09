@@ -1,7 +1,8 @@
 #include "UniformAttachment.h"
 
-UniformAttachment::UniformAttachment(GlobalResources *globalResources)
-    : globalResources(globalResources) {}
+UniformAttachment::UniformAttachment(GlobalResources *globalResources,
+                                     Camera &camera)
+    : globalResources(globalResources), camera(&camera) {}
 
 void UniformAttachment::init(uint32_t maxFramesInFlight) {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -21,12 +22,14 @@ void UniformAttachment::init(uint32_t maxFramesInFlight) {
     }
 }
 
-void UniformAttachment::update(uint32_t currentFrame, const Camera &camera,
-                               const VkExtent2D &swapChainExtent) {
+void UniformAttachment::update(uint32_t currentFrame) {
+    auto &swapChain = globalResources->getSwapChain();
+    VkExtent2D swapChainExtent = swapChain.getExtent();
+
     UniformBufferObject ubo{};
-    ubo.view = camera.GetViewMatrix();
+    ubo.view = camera->GetViewMatrix();
     ubo.proj = glm::perspective(
-        glm::radians(camera.getZoom()),
+        glm::radians(camera->getZoom()),
         swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 1000.0f);
     ubo.proj[1][1] *= -1;
 

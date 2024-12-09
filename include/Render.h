@@ -3,14 +3,13 @@
 #include "Camera.h"
 #include "GlobalResources.h"
 #include "Scene.h"
-#include "SwapChain.h"
 #include <vulkan/vulkan.h>
 
 class Render {
   public:
-    Render(GlobalResources *globalResources, SwapChain *swapChain,
-           VkCommandBuffer commandBuffer, uint32_t imageIndex,
-           uint32_t currentFrame, VkSemaphore imageAvailableSemaphore,
+    Render(GlobalResources *globalResources, VkCommandBuffer commandBuffer,
+           uint32_t imageIndex, uint32_t currentFrame,
+           VkSemaphore imageAvailableSemaphore,
            VkSemaphore renderFinishedSemaphore, VkFence inFlightFence,
            Camera &camera);
     ~Render() = default;
@@ -24,7 +23,6 @@ class Render {
 
   private:
     GlobalResources *globalResources;
-    SwapChain *swapChain;
     VkCommandBuffer commandBuffer;
     uint32_t imageIndex;
     uint32_t currentFrame;
