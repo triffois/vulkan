@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
         Engine engine;
 
         UniformAttachment uniformAttachment(&engine.getGlobalResources(),
-                                            *engine.getCamera());
+                                            *engine.getCamera(), 0);
         uniformAttachment.init(engine.getDevice()->getMaxFramesInFlight());
         TextureAttachment &textureAttachment = engine.getGlobalResources()
                                                    .getTextureManager()

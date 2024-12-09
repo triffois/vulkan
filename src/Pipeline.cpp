@@ -21,7 +21,7 @@ void Pipeline::init(Device *device, VkFormat colorFormat, VkFormat depthFormat,
                     uint32_t maxFramesInFlight) {
     this->device = device;
 
-    descriptorLayout.init(*device->getDevice());
+    descriptorLayout.init(*device->getDevice(), attachments);
 
     auto vertShaderCode = readFile(vertShaderPath);
     auto fragShaderCode = readFile(fragShaderPath);

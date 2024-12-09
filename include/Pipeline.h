@@ -3,7 +3,6 @@
 #include "DescriptorLayout.h"
 #include "Device.h"
 #include "IAttachment.h"
-#include <memory>
 #include <string>
 #include <vector>
 #include <vulkan/vulkan.h>

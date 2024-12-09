@@ -1,8 +1,9 @@
 #include "UniformAttachment.h"
 
 UniformAttachment::UniformAttachment(GlobalResources *globalResources,
-                                     Camera &camera)
-    : globalResources(globalResources), camera(&camera) {}
+                                     Camera &camera, uint32_t bindingLocation)
+    : globalResources(globalResources), camera(&camera),
+      bindingLocation(bindingLocation) {}
 
 void UniformAttachment::init(uint32_t maxFramesInFlight) {
     VkDeviceSize bufferSize = sizeof(UniformBufferObject);
@@ -54,4 +55,15 @@ void UniformAttachment::updateDescriptorSet(uint32_t maxFramesInFlight,
         descriptorSet.updateBufferInfo(i, 0, uniformBuffers[i]->getBuffer(), 0,
                                        sizeof(UniformBufferObject));
     }
+}
+
+VkDescriptorSetLayoutBinding UniformAttachment::layoutBinding() const {
+    VkDescriptorSetLayoutBinding uboLayoutBinding{};
+    uboLayoutBinding.binding = bindingLocation;
+    uboLayoutBinding.descriptorCount = 1;
+    uboLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    uboLayoutBinding.pImmutableSamplers = nullptr;
+    uboLayoutBinding.stageFlags =
+        VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    return uboLayoutBinding;
 }

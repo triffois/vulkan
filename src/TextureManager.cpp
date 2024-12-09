@@ -28,6 +28,6 @@ void TextureManager::prepareResources() {
     if (resourcesPrepared) {
         std::runtime_error("Resources have already been prepared");
     }
-    textureAttachment.init(device, MAX_TEXTURE_DIMENSION, textures);
+    textureAttachment.init(device, MAX_TEXTURE_DIMENSION, textures, 1);
     resourcesPrepared = true;
 }

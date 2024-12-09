@@ -1,9 +1,11 @@
-#include "TextureAttachment.h"
 #include "Buffer.h"
+#include "TextureAttachment.h"
 
 void TextureAttachment::init(Device *device, uint32_t max_texture_dimension,
-                             std::vector<TextureData> &textures) {
+                             std::vector<TextureData> &textures,
+                             uint32_t bindingLocation) {
     this->device = device;
+    this->bindingLocation = bindingLocation;
     textureImage = std::make_unique<Image>(*device);
 
     createTextureArray(max_texture_dimension, textures);
@@ -127,3 +129,16 @@ void TextureAttachment::updateDescriptorSet(uint32_t maxFramesInFlight,
 }
 
 void TextureAttachment::update(uint32_t frameIndex) {}
+
+VkDescriptorSetLayoutBinding TextureAttachment::layoutBinding() const {
+    VkDescriptorSetLayoutBinding samplerArrayLayoutBinding{};
+    samplerArrayLayoutBinding.binding = bindingLocation;
+    samplerArrayLayoutBinding.descriptorCount =
+        1; // One array containing all textures
+    samplerArrayLayoutBinding.descriptorType =
+        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    samplerArrayLayoutBinding.pImmutableSamplers = nullptr;
+    samplerArrayLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    return samplerArrayLayoutBinding;
+}
