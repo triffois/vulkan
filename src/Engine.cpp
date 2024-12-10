@@ -6,7 +6,7 @@
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
-Engine::Engine(){ initVulkan(); }
+Engine::Engine() { initVulkan(); }
 
 bool Engine::running() const {
     return isRunning && !glfwWindowShouldClose(appWindow.getWindow());
@@ -35,14 +35,10 @@ Render Engine::startRender() {
         VK_IMAGE_LAYOUT_UNDEFINED,
         VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, currentCmdBuffer);
 
-    processEvents();
-    peripheralsManager.updatePeripheralsOnFrame();
-
-    return Render(&globalResources,
-                  commandBuffers[currentFrame]->getCommandBuffer(), imageIndex,
-                  currentFrame, imageAvailableSemaphores[currentFrame],
-                  renderFinishedSemaphores[currentFrame],
-                  inFlightFences[currentFrame]);
+    return Render(
+        &globalResources, commandBuffers[currentFrame]->getCommandBuffer(),
+        imageIndex, currentFrame, imageAvailableSemaphores[currentFrame],
+        renderFinishedSemaphores[currentFrame], inFlightFences[currentFrame]);
 }
 
 void Engine::finishRender(Render &render) {
@@ -56,10 +52,6 @@ void Engine::finishRender(Render &render) {
 
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
-
-void Engine::processEvents() { glfwPollEvents(); }
-
-
 
 AppWindow &Engine::getWindow() { return appWindow; }
 

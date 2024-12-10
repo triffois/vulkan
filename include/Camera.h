@@ -3,86 +3,67 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-// courtesy - learn opengl
-
-const float YAW = -90.0f;
-const float PITCH = 0.0f;
-
-struct cameraOrientation {
+struct CameraOrientation {
     float yaw;
     float pitch;
 };
 
 class Camera {
   public:
-    glm::vec3 Position;
-    glm::vec3 Front;
-    glm::vec3 Up;
-    glm::vec3 Right;
-    glm::vec3 WorldUp;
+    glm::vec3 position;
+    CameraOrientation orientation;
+    float zoom{45.0f};
 
-    cameraOrientation Orientation;
+    explicit Camera(glm::vec3 position = glm::vec3(0.0f),
+                    CameraOrientation orientation = {-90.0f, 0.0f})
+        : position{position}, orientation{orientation} {}
 
-    cameraOrientation getOrientation() const { return Orientation; }
-
-    explicit Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-                    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
-                    cameraOrientation Orientation = {YAW, PITCH})
-        : Position{position}, WorldUp{up}, Orientation{Orientation} {
-        updateCameraVectors();
-    }
-    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
-           float yaw, float pitch)
-        : Position{posX, posY, posZ}, WorldUp{upX, upY, upZ},
-          Orientation{yaw, pitch} {
-        ;
-        updateCameraVectors();
+    glm::mat4 getViewMatrix() const {
+        return glm::lookAt(position, position + calculateFrontVector(),
+                           glm::vec3(0.0f, 1.0f, 0.0f));
     }
 
-    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
-           cameraOrientation orientation)
-        : Position{posX, posY, posZ}, WorldUp{upX, upY, upZ},
-          Orientation{orientation} {
-        ;
-        updateCameraVectors();
+    glm::mat4 getProjectionMatrix(float aspectRatio) const {
+        auto proj =
+            glm::perspective(glm::radians(zoom), aspectRatio, 0.1f, 1000.0f);
+        proj[1][1] *= -1; // Vulkan correction
+        return proj;
     }
 
-    glm::mat4 GetViewMatrix() const {
-        return glm::lookAt(Position, Position + Front, Up);
+    void translate(const glm::vec3 &translation) { position += translation; }
+
+    void rotate(float yawOffset, float pitchOffset) {
+        orientation.yaw += yawOffset;
+        orientation.pitch += pitchOffset;
+        orientation.pitch = glm::clamp(orientation.pitch, -89.0f, 89.0f);
     }
 
-    void SetPosition(glm::vec3 position) {
-        Position = position;
-        updateCameraVectors();
-    }
+    void setZoom(float newZoom) { zoom = glm::clamp(newZoom, 1.0f, 45.0f); }
 
-    void SetOrientation(float yaw, float pitch) {
-        Orientation.yaw = yaw;
-        Orientation.pitch = pitch;
-
-        updateCameraVectors();
-    }
-
-    void SetOrientation(cameraOrientation orientation) {
-        Orientation = orientation;
-        updateCameraVectors();
-    }
-
-    void setViewDirection(glm::vec3 viewDirection) {
-        Front = glm::normalize(viewDirection);
-        Right = glm::normalize(glm::cross(Front, WorldUp));
-        Up = glm::normalize(glm::cross(Right, Front));
-    }
-
-  private:
-    void updateCameraVectors() {
+    // Calculate vectors on demand
+    glm::vec3 calculateFrontVector() const {
         glm::vec3 front;
-        front.x = cos(glm::radians(Orientation.yaw)) * cos(glm::radians(Orientation.pitch));
-        front.y = sin(glm::radians(Orientation.pitch));
-        front.z = sin(glm::radians(Orientation.yaw)) * cos(glm::radians(Orientation.pitch));
+        front.x = cos(glm::radians(orientation.yaw)) *
+                  cos(glm::radians(orientation.pitch));
+        front.y = sin(glm::radians(orientation.pitch));
+        front.z = sin(glm::radians(orientation.yaw)) *
+                  cos(glm::radians(orientation.pitch));
+        return glm::normalize(front);
+    }
 
-        Front = glm::normalize(front);
-        Right = glm::normalize(glm::cross(Front, WorldUp));
-        Up = glm::normalize(glm::cross(Right, Front));
+    glm::vec3 calculateForwardVector() const {
+        auto front = calculateFrontVector();
+        return glm::normalize(glm::vec3(front.x, 0.0f, front.z));
+    }
+
+    glm::vec3 calculateRightVector() const {
+        return glm::normalize(glm::vec3(-sin(glm::radians(orientation.yaw)),
+                                        0.0f,
+                                        cos(glm::radians(orientation.yaw))));
+    }
+
+    glm::vec3 calculateUpVector() const {
+        return glm::normalize(
+            glm::cross(calculateRightVector(), calculateFrontVector()));
     }
 };

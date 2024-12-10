@@ -1,13 +1,13 @@
+#include "ControlSystem.h"
 #include "PipelineSettings.h"
 #include "SceneLighting.h"
 #include "TextureManager.h"
-#include "UniformAttachment.h"
-#include "ControlSystem.h"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 
+#include "ControlSystem.h"
 #include "Engine.h"
 #include "ModelLoader.h"
 
@@ -27,15 +27,16 @@ int main(int argc, char *argv[]) {
         auto model = ModelLoader::loadFromGLTF(
             argv[1], engine.getGlobalResources(), textures);
 
-        std::vector<glm::vec3> offsets;
+        // std::vector<glm::vec3> offsets;
         // for (int i = -500; i < 500; i += 100) {
         //     for (int j = -500; j < 500; j += 100) {
         //         offsets.push_back(glm::vec3{i, 0, j});
         //     }
         // }
-        model.scatter(offsets);
+        // model.scatter(offsets);
         // Create the uniform attachment with a lambda for updates
-        auto uniformAttachment = controlSystem.getUniformAttachment();
+
+        auto uniformAttachment = controlSystem.getUniformAttachment(0);
 
         auto resolutionsAttachment = textures.getResolutionsAttachment<256>(1);
         auto textureAttachment = textures.getTextureAttachment(2);

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Model.h"
-#include "Pipeline.h"
 #include "PipelineSettings.h"
 #include "TextureManager.h"
 #define GLFW_INCLUDE_VULKAN
@@ -16,12 +15,9 @@
 
 #include "AppInstance.h"
 #include "AppWindow.h"
-#include "Camera.h"
 #include "CommandBuffer.h"
 #include "Device.h"
-#include "EnginePeripherals.h"
 #include "GlobalResources.h"
-#include "Pipeline.h"
 #include "Render.h"
 
 class Engine {
@@ -39,8 +35,6 @@ class Engine {
     Render startRender();
 
     void finishRender(Render &render);
-
-    Camera *getCamera();
 
     GlobalResources &getGlobalResources() { return globalResources; }
     Device *getDevice() { return &appDevice; }
@@ -62,8 +56,6 @@ class Engine {
     AppWindow appWindow;
 
     GlobalResources globalResources;
-
-    EnginePeripheralsManager peripheralsManager;
 
     std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
 
@@ -127,6 +119,4 @@ class Engine {
         const std::vector<VkPresentModeKHR> &availablePresentModes);
 
     VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR &capabilities);
-
-    void processEvents();
 };
