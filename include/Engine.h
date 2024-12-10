@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Model.h"
-#include "Pipeline.h"
 #include "PipelineSettings.h"
 #include "TextureManager.h"
 #define GLFW_INCLUDE_VULKAN
@@ -21,7 +20,6 @@
 #include "Device.h"
 #include "EnginePeripherals.h"
 #include "GlobalResources.h"
-#include "Pipeline.h"
 #include "Render.h"
 
 class Engine {

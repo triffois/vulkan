@@ -1,7 +1,5 @@
 #include "Engine.h"
 
-#include <numeric>
-
 #include "SwapChain.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
@@ -136,8 +134,6 @@ void Engine::initializeEngineTeardown() {
     vkFreeCommandBuffers(*appDevice.getDevice(),
                          appDevice.getGraphicsCommandPool()->getCommandPool(),
                          buffersToFree.size(), buffersToFree.data());
-
-    glfwTerminate();
 }
 
 void Engine::createCommandBuffers() {

@@ -1,7 +1,6 @@
 #include "AppInstance.h"
 #include "ValidationLayersInfo.h"
 
-#include <algorithm>
 #include <cstring>
 
 void AppInstance::init() {
@@ -156,4 +155,6 @@ AppInstance::~AppInstance() {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }
     vkDestroyInstance(instance, nullptr);
+
+    glfwTerminate();
 }
