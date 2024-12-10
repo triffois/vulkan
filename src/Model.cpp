@@ -48,15 +48,15 @@ void Model::translate(const glm::vec3 &offset) {
 void Model::scatter(const std::vector<glm::vec3> &offsets) {
     // Replace the instances with offsets * instances copies
     std::vector<RenderBatch> newBatches;
-    for (const auto &offset : offsets) {
-        for (const auto &batch : batches) {
-            std::vector<Instance> newInstances;
-            for (const auto &instance : batch.instances) {
+    for (const auto &batch : batches) {
+        std::vector<Instance> newInstances;
+        for (const auto &instance : batch.instances) {
+            for (const auto &offset : offsets) {
                 newInstances.push_back(instance);
                 newInstances.back().position += offset;
             }
-            newBatches.push_back(RenderBatch{batch.meshId, newInstances});
         }
+        newBatches.push_back(RenderBatch{batch.meshId, newInstances});
     }
     batches = newBatches;
 }
