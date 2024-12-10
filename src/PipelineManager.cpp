@@ -5,7 +5,12 @@
 
 void PipelineManager::init(Device *device) { this->device = device; }
 
-void PipelineManager::cleanup() { pipelines.clear(); }
+void PipelineManager::cleanup() {
+    for (auto &pipeline : pipelines) {
+        pipeline.second->cleanup();
+    }
+    pipelines.clear();
+}
 
 PipelineID PipelineManager::createPipeline(
     DescriptorLayout descriptorLayout, VkFormat colorFormat,

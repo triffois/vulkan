@@ -4,10 +4,16 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+AppWindow::~AppWindow() {
+    vkDestroySurfaceKHR(*appInstance->getInstance(), surface, nullptr);
+    glfwDestroyWindow(window);
+}
+
 void AppWindow::init(AppInstance *appInstance,
                      ResizeCallback windowResizeCallback) {
     initializeWindow(appInstance, windowResizeCallback);
     createSurface(appInstance);
+    this->appInstance = appInstance;
 }
 
 static void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
@@ -26,11 +32,6 @@ static void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
 static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
     auto app = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(window));
     app->getCamera()->ProcessMouseScroll(yoffset);
-}
-
-void AppWindow::cleanUp(const AppContext &context) {
-    vkDestroySurfaceKHR(*context.appInstance, surface, nullptr);
-    glfwDestroyWindow(window);
 }
 
 void AppWindow::initializeWindow(AppInstance *appInstance,

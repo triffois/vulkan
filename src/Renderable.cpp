@@ -21,3 +21,8 @@ Renderable::Renderable(GlobalResources *resources, Model &model,
         passes.emplace_back(resources, batch, pipelineId, maxFramesInFlight);
     }
 }
+
+Renderable::~Renderable() {
+    std::for_each(passes.begin(), passes.end(),
+                  [](auto &pass) { pass.cleanUp(); });
+}

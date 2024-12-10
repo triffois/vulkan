@@ -24,12 +24,12 @@ void Device::init(const AppWindow *appWindow, const AppInstance *appInstance) {
                         VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
 }
 
-void Device::cleanUp(const AppContext &context) {
+Device::~Device() {
     delete graphicsCommandPool;
 
     std::for_each(allocations.begin(), allocations.end(),
                   [this](auto &allocationToCleanUp) {
-                      freeAllocation(&allocationToCleanUp);
+                      freeAllocation(&allocationToCleanUp.second);
                   });
 
     vmaDestroyAllocator(deviceMemoryAllocator);
@@ -248,9 +248,13 @@ SwapChainSupportDetails Device::querySwapChainSupport(VkPhysicalDevice device) {
 }
 
 void Device::freeAllocation(DeviceMemoryAllocation *allocationToFree) {
+    VmaAllocationInfo info;
+    vmaGetAllocationInfo(deviceMemoryAllocator, allocationToFree->allocation,
+                         &info);
+
     if (allocationToFree->allocatedObject.index() == 0) {
 #ifndef NDEBUG
-        std::cout << "Destroying buffer" << std::endl;
+        std::cout << "Destroying buffer." << std::endl;
 #endif
 
         auto bufferToFree = std::get<0>(allocationToFree->allocatedObject);
@@ -258,13 +262,21 @@ void Device::freeAllocation(DeviceMemoryAllocation *allocationToFree) {
                          allocationToFree->allocation);
     } else {
 #ifndef NDEBUG
-        std::cout << "Destroying image" << std::endl;
+        std::cout << "Destroying image." << std::endl;
 #endif
 
         auto imageToFree = std::get<1>(allocationToFree->allocatedObject);
+
         vmaDestroyImage(deviceMemoryAllocator, imageToFree,
                         allocationToFree->allocation);
     }
+}
+
+AllocationIdentifier Device::generateNewAllocationId() {
+    auto newId = AllocationIdentifier();
+    newId.id = allocationIdCounter++;
+
+    return newId;
 }
 
 VkResult Device::submitToAvailableGraphicsQueue(const VkSubmitInfo *info,
@@ -286,16 +298,23 @@ Device::allocateBufferMemory(const VkBufferCreateInfo *bufCreateInfo,
                              const VmaAllocationCreateInfo *allocCreateInfo,
                              VkBuffer *targetBuf,
                              DeviceMemoryAllocationHandle *allocationInfo) {
+    assert(allocationInfo != nullptr);
 
     DeviceMemoryAllocation newAllocationInfo{};
-    newAllocationInfo.allocatedObject.emplace<0>(*targetBuf);
     auto res =
         vmaCreateBuffer(deviceMemoryAllocator, bufCreateInfo, allocCreateInfo,
                         targetBuf, &newAllocationInfo.allocation, nullptr);
+    newAllocationInfo.allocatedObject.emplace<0>(*targetBuf);
 
     if (res == VK_SUCCESS) {
-        allocations.emplace_back(newAllocationInfo);
-        allocationInfo->allocationInfo = &allocations.back();
+        auto newId = generateNewAllocationId();
+
+        allocations.insert(std::make_pair(newId, newAllocationInfo));
+        allocationInfo->identifier = newId;
+
+#ifndef NDEBUG
+        std::cout << "ID for new buffer allocation : " << newId.id << std::endl;
+#endif
     }
 
     return res;
@@ -306,16 +325,21 @@ Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
                             const VmaAllocationCreateInfo *allocCreateInfo,
                             VkImage *targetImage,
                             DeviceMemoryAllocationHandle *allocationInfo) {
-
     DeviceMemoryAllocation newAllocationInfo{};
-    newAllocationInfo.allocatedObject.emplace<1>(*targetImage);
     auto res =
         vmaCreateImage(deviceMemoryAllocator, imgCreateInfo, allocCreateInfo,
                        targetImage, &newAllocationInfo.allocation, nullptr);
+    newAllocationInfo.allocatedObject.emplace<1>(*targetImage);
 
     if (res == VK_SUCCESS) {
-        allocations.emplace_back(newAllocationInfo);
-        allocationInfo->allocationInfo = &allocations.back();
+        auto newId = generateNewAllocationId();
+
+        allocations.insert(std::make_pair(newId, newAllocationInfo));
+        allocationInfo->identifier = newId;
+
+#ifndef NDEBUG
+        std::cout << "ID for new image allocation : " << newId.id << std::endl;
+#endif
     }
 
     return res;
@@ -323,32 +347,36 @@ Device::allocateImageMemory(const VkImageCreateInfo *imgCreateInfo,
 
 VkResult Device::mapMemory(DeviceMemoryAllocationHandle *allocationInfo,
                            void **ppData) const {
+    if (allocations.find(allocationInfo->identifier) == allocations.end())
+        return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+
     return vmaMapMemory(deviceMemoryAllocator,
-                        allocationInfo->allocationInfo->allocation, ppData);
+                        allocations.at(allocationInfo->identifier).allocation,
+                        ppData);
 }
 
 VkResult
 Device::unmapMemory(DeviceMemoryAllocationHandle *allocationInfo) const {
+    if (allocations.find(allocationInfo->identifier) == allocations.end())
+        return VK_ERROR_INVALID_EXTERNAL_HANDLE;
+
     vmaUnmapMemory(deviceMemoryAllocator,
-                   allocationInfo->allocationInfo->allocation);
+                   allocations.at(allocationInfo->identifier).allocation);
     return VK_SUCCESS;
 }
 
 VkResult Device::freeAllocationMemoryOnDemand(
     DeviceMemoryAllocationHandle *allocationInfo) {
-    // TODO: this is painfully slow. May want to replace it in the time to come
-    auto allocationToFreeItr = std::find(allocations.begin(), allocations.end(),
-                                         *(allocationInfo->allocationInfo));
+    if (allocations.find(allocationInfo->identifier) == allocations.end())
+        throw std::runtime_error("Attempted to free unallocated memory!");
 
-    if (allocationToFreeItr != allocations.end()) {
-        freeAllocation(allocationInfo->allocationInfo);
-        allocations.erase(allocationToFreeItr);
-    }
 #ifndef NDEBUG
-    else {
-        std::cout << "Failed to free VMA memory on demand" << std::endl;
-    }
+    std::cout << "Allocation ID to free : " << allocationInfo->identifier.id
+              << std::endl;
 #endif
+
+    freeAllocation(&allocations.at(allocationInfo->identifier));
+    allocations.erase(allocationInfo->identifier);
 
     return VK_SUCCESS;
 }

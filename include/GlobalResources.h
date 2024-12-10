@@ -8,11 +8,10 @@
 class GlobalResources {
   public:
     GlobalResources() = default;
-    ~GlobalResources() = default;
+
+    ~GlobalResources();
 
     void init(Device *device, AppWindow *appWindow);
-
-    void cleanup();
 
     SwapChain &getSwapChain() { return *swapChain; }
     PipelineManager &getPipelineManager() { return pipelineManager; }
@@ -21,7 +20,7 @@ class GlobalResources {
 
   private:
     Device *device = nullptr;
-    std::unique_ptr<SwapChain> swapChain;
     PipelineManager pipelineManager;
     MeshManager meshManager;
+    std::unique_ptr<SwapChain> swapChain;
 };

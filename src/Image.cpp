@@ -4,13 +4,15 @@
 #include "Device.h"
 #include "stb_image.h"
 
-void Image::cleanUp() {
-    vmaUnmapMemory(allocator, imageAllocation);
-    vmaDestroyImage(allocator, image, imageAllocation);
-    vkDestroyImageView(*device.getDevice(), imageView, nullptr);
-}
+Image::~Image() { cleanUp(); }
 
-void Image::cleanUp(const AppContext &context) { cleanUp(); }
+void Image::cleanUp() {
+    if (image != VK_NULL_HANDLE) {
+        device.freeAllocationMemoryOnDemand(&imageAllocationHandle);
+        vkDestroyImageView(*device.getDevice(), imageView, nullptr);
+        image = VK_NULL_HANDLE;
+    }
+}
 
 void Image::createImage(uint32_t width, uint32_t height, VkFormat format,
                         VkImageTiling tiling, VkImageUsageFlags usage,
@@ -51,9 +53,8 @@ void Image::createImage(uint32_t width, uint32_t height, VkFormat format,
     imageAllocInfo.flags = allocFlagBits;
     imageAllocInfo.pool = VK_NULL_HANDLE;
 
-    DeviceMemoryAllocationHandle allocationHandle{};
     if (device.allocateImageMemory(&imageInfo, &imageAllocInfo, &this->image,
-                                   &allocationHandle) != VK_SUCCESS) {
+                                   &imageAllocationHandle) != VK_SUCCESS) {
         throw std::runtime_error("Failed to allocate memory for image!");
     }
 }

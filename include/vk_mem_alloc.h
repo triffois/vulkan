@@ -10476,7 +10476,7 @@ struct VmaAllocator_T {
 
     VmaCurrentBudgetData m_Budget;
     VMA_ATOMIC_UINT32
-        m_DeviceMemoryCount; // Total number of VkDeviceMemory objects.
+    m_DeviceMemoryCount; // Total number of VkDeviceMemory objects.
 
     VmaAllocator_T(const VmaAllocatorCreateInfo *pCreateInfo);
     VkResult Init(const VmaAllocatorCreateInfo *pCreateInfo);
@@ -10643,7 +10643,7 @@ struct VmaAllocator_T {
     VkPhysicalDevice m_PhysicalDevice;
     VMA_ATOMIC_UINT32 m_CurrentFrameIndex;
     VMA_ATOMIC_UINT32
-        m_GpuDefragmentationMemoryTypeBits; // UINT32_MAX means uninitialized.
+    m_GpuDefragmentationMemoryTypeBits; // UINT32_MAX means uninitialized.
 #if VMA_EXTERNAL_MEMORY
     VkExternalMemoryHandleTypeFlagsKHR
         m_TypeExternalMemoryHandleTypes[VK_MAX_MEMORY_TYPES];
