@@ -1,14 +1,15 @@
 #pragma once
 
 #include "Model.h"
+#include "PipelineSettings.h"
 #include "RenderPass.h"
 #include <cstring>
 #include <vector>
 
 class Renderable {
   public:
-    Renderable(GlobalResources *resources, Model &model, std::string &vertPath,
-               std::string &fragPath);
+    Renderable(GlobalResources *resources, Model &model,
+               PipelineSettings &settings);
 
     ~Renderable();
 

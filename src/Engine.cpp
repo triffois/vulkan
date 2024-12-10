@@ -177,8 +177,6 @@ TextureManager Engine::createTextureManager() {
     return TextureManager(&appDevice);
 }
 
-Renderable Engine::shaded(Model &model, std::string vertexShaderPath,
-                          std::string fragmentShaderPath) {
-    return Renderable(&globalResources, model, vertexShaderPath,
-                      fragmentShaderPath);
+Renderable Engine::shaded(Model &model, PipelineSettings &settings) {
+    return Renderable(&globalResources, model, settings);
 }

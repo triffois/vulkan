@@ -1,6 +1,6 @@
-#include "PipelineManager.h"
 #include "DescriptorLayout.h"
 #include "Pipeline.h"
+#include "PipelineManager.h"
 #include <stdexcept>
 
 void PipelineManager::init(Device *device) { this->device = device; }
@@ -12,18 +12,19 @@ void PipelineManager::cleanup() {
     pipelines.clear();
 }
 
-PipelineID PipelineManager::createPipeline(
-    DescriptorLayout descriptorLayout, VkFormat colorFormat,
-    VkFormat depthFormat, uint32_t maxFramesInFlight,
-    const std::string &vertPath, const std::string &fragPath,
-    std::vector<std::reference_wrapper<IAttachment>> attachments) {
+PipelineID PipelineManager::createPipeline(DescriptorLayout descriptorLayout,
+                                           VkFormat colorFormat,
+                                           VkFormat depthFormat,
+                                           uint32_t maxFramesInFlight,
+                                           PipelineSettings &settings) {
     if (!device) {
         throw std::runtime_error(
             "PipelineManager not initialized with device!");
     }
 
     // Create a unique ID from the shader paths
-    PipelineID id = vertPath + ":" + fragPath;
+    PipelineID id =
+        settings.getVertexShaderPath() + ":" + settings.getFragmentShaderPath();
 
     // Check if pipeline already exists
     if (pipelines.find(id) != pipelines.end()) {
@@ -33,8 +34,7 @@ PipelineID PipelineManager::createPipeline(
     // Create new pipeline and move it into the map
     pipelines.emplace(id, std::make_unique<Pipeline>(
                               device, std::move(descriptorLayout), colorFormat,
-                              depthFormat, maxFramesInFlight, vertPath,
-                              fragPath, attachments));
+                              depthFormat, maxFramesInFlight, settings));
 
     return id;
 }

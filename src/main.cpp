@@ -1,3 +1,4 @@
+#include "PipelineSettings.h"
 #include "SceneLighting.h"
 #include "TextureManager.h"
 #include "UniformAttachment.h"
@@ -25,6 +26,14 @@ int main(int argc, char *argv[]) {
         auto model = ModelLoader::loadFromGLTF(
             argv[1], engine.getGlobalResources(), textures);
 
+        std::vector<glm::vec3> offsets;
+        for (int i = -500; i < 500; i += 100) {
+            for (int j = -500; j < 500; j += 100) {
+                offsets.push_back(glm::vec3{i, 0, j});
+            }
+        }
+        model.scatter(offsets);
+
         // Create the uniform attachment with a lambda for updates
         auto uniformUpdator = [&engine, &textures](UniformBufferObject &ubo) {
             auto camera = engine.getCamera();
@@ -49,13 +58,13 @@ int main(int argc, char *argv[]) {
 
         SceneLighting staticLighting{*engine.getDevice(), 3};
 
-        model.bind(uniformAttachment);
-        model.bind(resolutionsAttachment);
-        model.bind(textureAttachment);
-        model.bind(staticLighting.getLightingBuffer());
+        PipelineSettings shading("shaders/vert.spv", "shaders/frag.spv");
+        shading.bind(uniformAttachment);
+        shading.bind(resolutionsAttachment);
+        shading.bind(textureAttachment);
+        shading.bind(staticLighting.getLightingBuffer());
 
-        auto renderable =
-            engine.shaded(model, "shaders/vert.spv", "shaders/frag.spv");
+        auto renderable = engine.shaded(model, shading);
 
         // Main render loop
         while (engine.running()) {

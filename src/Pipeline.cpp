@@ -1,6 +1,6 @@
-#include "Pipeline.h"
 #include "DescriptorLayout.h"
 #include "InstanceData.h"
+#include "Pipeline.h"
 #include <GLFW/glfw3.h>
 #include <cstring>
 #include <fstream>
@@ -12,14 +12,11 @@
 
 Pipeline::Pipeline(Device *device, DescriptorLayout descriptorLayout,
                    VkFormat colorFormat, VkFormat depthFormat,
-                   uint32_t maxFramesInFlight,
-                   const std::string &vertShaderPath,
-                   const std::string &fragShaderPath,
-                   std::vector<std::reference_wrapper<IAttachment>> attachments)
+                   uint32_t maxFramesInFlight, PipelineSettings &settings)
     : device(device), descriptorLayout(std::move(descriptorLayout)),
-      attachments(attachments) {
-    auto vertShaderCode = readFile(vertShaderPath);
-    auto fragShaderCode = readFile(fragShaderPath);
+      attachments(settings.getAttachments()) {
+    auto vertShaderCode = readFile(settings.getVertexShaderPath());
+    auto fragShaderCode = readFile(settings.getFragmentShaderPath());
 
     VkShaderModule vertShaderModule = createShaderModule(vertShaderCode);
     VkShaderModule fragShaderModule = createShaderModule(fragShaderCode);
