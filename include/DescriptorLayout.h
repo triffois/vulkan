@@ -12,7 +12,9 @@ class DescriptorLayout {
     DescriptorLayout(
         VkDevice device,
         std::vector<std::reference_wrapper<IAttachment>> attachments);
+
     void cleanup();
+
     VkDescriptorSetLayout getLayout() const { return layout; }
 
   private:

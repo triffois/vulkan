@@ -12,7 +12,9 @@ TextureAttachment::TextureAttachment(Device *device,
     createSampler();
 }
 
-void TextureAttachment::cleanup() {
+TextureAttachment::~TextureAttachment() { cleanUp(); }
+
+void TextureAttachment::cleanUp() {
     if (device) {
         if (textureSampler != VK_NULL_HANDLE) {
             vkDestroySampler(*device->getDevice(), textureSampler, nullptr);

@@ -12,23 +12,22 @@
 struct AllocationIdentifier {
     friend class Device;
 
-public:
-    size_t operator()(const AllocationIdentifier &id) const {
-        return id.id;
-    }
+  public:
+    size_t operator()(const AllocationIdentifier &id) const { return id.id; }
 
-    bool operator()(const AllocationIdentifier &id1, const AllocationIdentifier &id2) const {
+    bool operator()(const AllocationIdentifier &id1,
+                    const AllocationIdentifier &id2) const {
         return id1.id == id2.id;
     }
 
-private:
+  private:
     unsigned long int id{0};
 };
 
 struct DeviceMemoryAllocationHandle {
     friend class Device;
 
-private:
+  private:
     AllocationIdentifier identifier{};
 };
 
@@ -45,7 +44,7 @@ struct DeviceMemoryAllocation {
             return true;
         else if (allocatedObject.index() == 1 &&
                  std::get<1>(allocatedObject) ==
-                 std::get<1>(other.allocatedObject))
+                     std::get<1>(other.allocatedObject))
             return true;
 
         return false;

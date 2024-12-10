@@ -14,6 +14,7 @@ class Model {
     // Maybe call that abstraction "Scene", and make it a container for models
     // with one model per material
     void addBatch(RenderBatch &&batch);
+
     void bind(IAttachment &attachment) { attachments.push_back(attachment); }
 
     // TODO:
@@ -25,6 +26,7 @@ class Model {
     // void scatter(const std::vector<glm::vec3> &offsets);
 
     std::vector<RenderBatch> &getBatches() { return batches; }
+
     std::vector<std::reference_wrapper<IAttachment>> &getAttachments() {
         return attachments;
     }

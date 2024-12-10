@@ -1,23 +1,25 @@
 #include "Engine.h"
+
+#include <numeric>
+
 #include "SwapChain.h"
 
 const int MAX_FRAMES_IN_FLIGHT = 2;
 
 Engine::Engine() : mainCamera(glm::vec3(0.0f, 0.0f, 3.0f)) { initVulkan(); }
-Engine::~Engine() { cleanup(); }
 
 bool Engine::running() const {
     return isRunning && !glfwWindowShouldClose(appWindow.getWindow());
 }
 
 Render Engine::startRender() {
-    vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE,
-                    UINT64_MAX);
+    vkWaitForFences(*appDevice.getDevice(), 1, &inFlightFences[currentFrame],
+                    VK_TRUE, UINT64_MAX);
 
     uint32_t imageIndex = globalResources.getSwapChain().acquireNextImage(
         imageAvailableSemaphores[currentFrame]);
 
-    vkResetFences(device, 1, &inFlightFences[currentFrame]);
+    vkResetFences(*appDevice.getDevice(), 1, &inFlightFences[currentFrame]);
 
     commandBuffers[currentFrame]->reset();
     commandBuffers[currentFrame]->begin(
@@ -99,43 +101,41 @@ void Engine::processKeyboardInput() {
 
 void Engine::initVulkan() {
     appInstance.init();
-    appInstance.addComponentToCleanUp(&appInstance);
 
     appWindow.init(&appInstance, framebufferResizeCallback);
-    appInstance.addComponentToCleanUp(&appWindow, 0);
     appInstance.setAppWindow(appWindow.getWindow());
 
     appDevice.init(&appWindow, &appInstance);
-    appInstance.addComponentToCleanUp(&appDevice, 0);
     appInstance.setAppDevice(appDevice.getDevice());
-    device = *appDevice.getDevice();
+
+    globalResources.init(&appDevice, &appWindow);
 
     createCommandBuffers();
     createSyncObjects();
-
-    // Initialize global resources
-    globalResources.init(&appDevice, &appWindow);
 }
 
-void Engine::cleanup() {
-    globalResources.cleanup();
+void Engine::initializeEngineTeardown() {
+    vkWaitForFences(*appDevice.getDevice(), MAX_FRAMES_IN_FLIGHT,
+                    inFlightFences.data(), VK_TRUE, UINT64_MAX);
+    vkDeviceWaitIdle(*appDevice.getDevice());
 
-    // vkDestroyImage(device, textureImage, nullptr);
-    // vkFreeMemory(device, textureImageMemory, nullptr);
-
-    // vkDestroyBuffer(device, indexBuffer, nullptr);
-    // vkFreeMemory(device, indexBufferMemory, nullptr);
-
-    // vkDestroyBuffer(device, vertexBuffer, nullptr);
-    // vkFreeMemory(device, vertexBufferMemory, nullptr);
-
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        vkDestroySemaphore(device, renderFinishedSemaphores[i], nullptr);
-        vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
-        vkDestroyFence(device, inFlightFences[i], nullptr);
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+        vkDestroyFence(*appDevice.getDevice(), inFlightFences[i], nullptr);
+        vkDestroySemaphore(*appDevice.getDevice(), renderFinishedSemaphores[i],
+                           nullptr);
+        vkDestroySemaphore(*appDevice.getDevice(), imageAvailableSemaphores[i],
+                           nullptr);
     }
 
-    appInstance.cleanUpAll();
+    std::vector<VkCommandBuffer> buffersToFree;
+    std::transform(commandBuffers.begin(), commandBuffers.end(),
+                   std::back_inserter(buffersToFree),
+                   [](auto &commandBufferWrapper) {
+                       return commandBufferWrapper->getCommandBuffer();
+                   });
+    vkFreeCommandBuffers(*appDevice.getDevice(),
+                         appDevice.getGraphicsCommandPool()->getCommandPool(),
+                         buffersToFree.size(), buffersToFree.data());
 
     glfwTerminate();
 }
@@ -161,14 +161,14 @@ void Engine::createSyncObjects() {
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        if (vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+        if (vkCreateSemaphore(*appDevice.getDevice(), &semaphoreInfo, nullptr,
                               &imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(device, &semaphoreInfo, nullptr,
+            vkCreateSemaphore(*appDevice.getDevice(), &semaphoreInfo, nullptr,
                               &renderFinishedSemaphores[i]) != VK_SUCCESS ||
-            vkCreateFence(device, &fenceInfo, nullptr, &inFlightFences[i]) !=
-                VK_SUCCESS) {
+            vkCreateFence(*appDevice.getDevice(), &fenceInfo, nullptr,
+                          &inFlightFences[i]) != VK_SUCCESS) {
             throw std::runtime_error(
-                "failed to create synchronization objects for a frame!");
+                "Failed to create synchronization objects for a frame!");
         }
     }
 }

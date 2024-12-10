@@ -13,9 +13,11 @@ using TextureID = int32_t;
 class TextureManager {
   public:
     TextureManager(Device *device);
+
     ~TextureManager() = default;
 
     TextureManager(const TextureManager &) = delete;
+
     TextureManager &operator=(const TextureManager &) = delete;
 
     TextureID registerTexture(const TextureData &textureData);
@@ -39,6 +41,7 @@ class TextureManager {
     };
 
     TextureAttachment getTextureAttachment(uint32_t bindingLocation);
+
     template <size_t max_n_textures>
     UniformAttachment<TextureResolutions<max_n_textures>>
     getResolutionsAttachment(uint32_t bindingLocation) {
