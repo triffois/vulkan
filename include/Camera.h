@@ -38,7 +38,7 @@ class Camera {
         orientation.pitch = glm::clamp(orientation.pitch, -89.0f, 89.0f);
     }
 
-    void setZoom(float newZoom) { zoom = glm::clamp(newZoom, 1.0f, 45.0f); }
+    void setZoom(float newZoom) { zoom = glm::clamp(newZoom, 1.0f, 179.0f); }
 
     // Calculate vectors on demand
     glm::vec3 calculateFrontVector() const {
