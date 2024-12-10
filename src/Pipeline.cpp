@@ -192,8 +192,10 @@ void Pipeline::cleanup() {
         vkDestroyPipelineLayout(*device->getDevice(), pipelineLayout, nullptr);
         pipelineLayout = VK_NULL_HANDLE;
     }
-
-    // TODO: finish cleanup
+    if (auto setLayout = descriptorLayout;
+        setLayout.getLayout() != VK_NULL_HANDLE) {
+        setLayout.cleanup();
+    }
 }
 
 VkShaderModule Pipeline::createShaderModule(const std::vector<char> &code) {

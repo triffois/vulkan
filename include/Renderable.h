@@ -11,6 +11,8 @@ class Renderable {
     Renderable(GlobalResources *resources, Model &model,
                PipelineSettings &settings);
 
+    ~Renderable();
+
     // TODO: potentially merging, for convenience - not everything can be
     // merged as a model, and having different renderables for different
     // materials is a bit crazy :3

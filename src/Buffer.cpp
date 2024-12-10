@@ -7,7 +7,6 @@ Buffer::Buffer(Device *device, VkDeviceSize size, VkBufferUsageFlags usage,
                VkMemoryPropertyFlags properties, VmaMemoryUsage memoryUsage,
                VmaAllocationCreateFlagBits allocBits)
     : device(device) {
-
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     bufferInfo.size = size;
@@ -40,7 +39,10 @@ Buffer::Buffer(Device *device, VkDeviceSize size, VkBufferUsageFlags usage,
 
 Buffer::~Buffer() {
     if (buffer != VK_NULL_HANDLE) {
-        vkDestroyBuffer(*device->getDevice(), buffer, nullptr);
+        // vkDestroyBuffer(*device->getDevice(), buffer, nullptr);
+        if (bufferHasBeenMapped) {
+            unmap();
+        }
         device->freeAllocationMemoryOnDemand(&allocation);
     }
 }
@@ -81,9 +83,14 @@ void Buffer::map(void **data) {
     if (device->mapMemory(&allocation, data) != VK_SUCCESS) {
         throw std::runtime_error("Failed to map buffer memory");
     }
+
+    bufferHasBeenMapped = true;
 }
 
-void Buffer::unmap() { device->unmapMemory(&allocation); }
+void Buffer::unmap() {
+    device->unmapMemory(&allocation);
+    bufferHasBeenMapped = false;
+}
 
 void Buffer::copyToImage(VkImage image, uint32_t width, uint32_t height) {
     CommandBuffer cmd(device, device->getGraphicsCommandPool());

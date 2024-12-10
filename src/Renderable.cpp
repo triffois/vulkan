@@ -1,4 +1,5 @@
 #include "Renderable.h"
+#include <algorithm>
 
 Renderable::Renderable(GlobalResources *resources, Model &model,
                        PipelineSettings &settings)
@@ -20,4 +21,9 @@ Renderable::Renderable(GlobalResources *resources, Model &model,
     for (auto &batch : model.getBatches()) {
         passes.emplace_back(resources, batch, pipelineId, maxFramesInFlight);
     }
+}
+
+Renderable::~Renderable() {
+    std::for_each(passes.begin(), passes.end(),
+                  [](auto &pass) { pass.cleanUp(); });
 }

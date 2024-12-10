@@ -1,5 +1,11 @@
 #include "GlobalResources.h"
 
+GlobalResources::~GlobalResources() {
+    meshManager.cleanup();
+    pipelineManager.cleanup();
+    swapChain->cleanup();
+}
+
 void GlobalResources::init(Device *device, AppWindow *appWindow) {
     this->device = device;
 
@@ -9,11 +15,4 @@ void GlobalResources::init(Device *device, AppWindow *appWindow) {
 
     pipelineManager.init(device);
     meshManager.init(device);
-}
-
-void GlobalResources::cleanup() {
-    meshManager.cleanup();
-    pipelineManager.cleanup();
-
-    swapChain->cleanup();
 }

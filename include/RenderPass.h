@@ -13,14 +13,19 @@ class RenderPass {
   public:
     RenderPass(GlobalResources *globalResources, const RenderBatch &batch,
                PipelineID pipelineId, uint32_t maxFramesInFlight);
-    ~RenderPass();
+
+    ~RenderPass() = default;
+
+    void cleanUp();
 
     // Prevent copying
     RenderPass(const RenderPass &) = delete;
+
     RenderPass &operator=(const RenderPass &) = delete;
 
     // Allow moving
     RenderPass(RenderPass &&) = default;
+
     RenderPass &operator=(RenderPass &&) = default;
 
     // Getters
@@ -28,6 +33,7 @@ class RenderPass {
     PipelineID getPipelineId() const { return pipelineId; }
     uint32_t getInstanceCount() const { return instanceCount; }
     VkBuffer getInstanceBuffer() const { return instanceBuffer->getBuffer(); }
+
     VkDescriptorSet getDescriptorSet(uint32_t frameIndex) const {
         return descriptorSet.getSet(frameIndex);
     }

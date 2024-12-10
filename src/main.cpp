@@ -72,6 +72,10 @@ int main(int argc, char *argv[]) {
             render.submit(renderable);
             engine.finishRender(render);
         }
+
+        engine.initializeEngineTeardown();
+        // it is needed here to do some initial clean-up before destructors of
+        // objects created above kick in
     } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

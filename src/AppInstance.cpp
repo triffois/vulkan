@@ -17,27 +17,6 @@ void AppInstance::setAppDevice(const VkDevice *appDevice) {
 
 void AppInstance::setAppWindow(const GLFWwindow *window) { appWindow = window; }
 
-void AppInstance::cleanUpAll() {
-    AppContext currentCleanUpContext{&instance, appDevice, appWindow};
-
-    assert(instance != nullptr && appDevice != nullptr && appWindow != nullptr);
-
-    std::for_each(componentsToCleanUp.begin(), componentsToCleanUp.end(),
-                  [&currentCleanUpContext](auto component) {
-                      component->cleanUp(currentCleanUpContext);
-                  });
-}
-
-// if order is not specified (== -1) -> adds as a last component to clean up
-void AppInstance::addComponentToCleanUp(INeedCleanUp *componentToCleanUp,
-                                        int order) {
-    if (order == -1)
-        componentsToCleanUp.emplace_back(componentToCleanUp);
-    else
-        componentsToCleanUp.insert(componentsToCleanUp.cbegin() + order,
-                                   componentToCleanUp);
-}
-
 bool AppInstance::checkValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -172,7 +151,7 @@ void AppInstance::createInstance() {
     }
 }
 
-void AppInstance::cleanUp(const AppContext &context) {
+AppInstance::~AppInstance() {
     if (enableValidationLayers) {
         DestroyDebugUtilsMessengerEXT(instance, debugMessenger, nullptr);
     }

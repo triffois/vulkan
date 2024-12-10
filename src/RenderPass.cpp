@@ -30,8 +30,9 @@ RenderPass::RenderPass(GlobalResources *globalResources,
     }
 }
 
-RenderPass::~RenderPass() {
-    // TODO
+void RenderPass::cleanUp() {
+    vkDestroyDescriptorPool(*globalResources->getDevice()->getDevice(),
+                            descriptorPool.getPool(), nullptr);
 }
 
 void RenderPass::createInstanceBuffer(const RenderBatch &batch) {

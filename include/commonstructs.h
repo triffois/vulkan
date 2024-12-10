@@ -90,12 +90,21 @@ struct UniformBufferObject {
     alignas(16) glm::vec4 camPos{};
 };
 
-struct SimpleLightSource {
-    // alignas(16)
+struct PointLightSource {
     alignas(16) glm::vec4 lightColor{};
     alignas(16) glm::vec4 lightPos{};
     alignas(4) float lightIntensity{};
     alignas(4) int lightRange{};
+};
+
+struct DirectionalLightSource {
+    alignas(16) glm::vec4 lightDirection;
+    alignas(16) glm::vec4 lightColor;
+};
+
+struct SceneLightData {
+    alignas(16) PointLightSource pointLights[3];
+    alignas(16) DirectionalLightSource dirLight;
 };
 
 struct AppContext {

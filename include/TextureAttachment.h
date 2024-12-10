@@ -12,12 +12,18 @@ class TextureAttachment : public IAttachment {
     TextureAttachment(Device *device, uint32_t max_texture_dimension,
                       std::vector<TextureData> &textures,
                       uint32_t bindingLocation);
-    void cleanup();
+
+    ~TextureAttachment();
+
+    void cleanUp();
 
     VkDescriptorSetLayoutBinding layoutBinding() const override;
+
     void updateDescriptorSet(uint32_t maxFramesInFlight,
                              DescriptorSet &descriptorSet) override;
+
     void update(uint32_t frameIndex) override;
+
     VkDescriptorType getType() const override {
         return VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     }
@@ -31,6 +37,8 @@ class TextureAttachment : public IAttachment {
 
     void createTextureArray(uint32_t max_texture_dimension,
                             std::vector<TextureData> &textures);
+
     void updateTextureArray(std::vector<TextureData> &textures);
+
     void createSampler();
 };

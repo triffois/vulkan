@@ -27,14 +27,19 @@
 class Engine {
   public:
     Engine();
-    ~Engine();
+
+    ~Engine() = default;
 
     Engine(const Engine &) = delete;
+
     Engine &operator=(const Engine &) = delete;
 
     bool running() const;
+
     Render startRender();
+
     void finishRender(Render &render);
+
     Camera *getCamera();
 
     GlobalResources &getGlobalResources() { return globalResources; }
@@ -43,27 +48,38 @@ class Engine {
     TextureManager createTextureManager();
     Renderable shaded(Model &model, PipelineSettings &settings);
 
+    void initializeEngineTeardown();
+
   private:
+    // order of destruction matters here. DO NOT CHANGE
+
     AppInstance appInstance;
-    AppWindow appWindow;
+
     Device appDevice;
+
+    AppWindow appWindow;
+
     GlobalResources globalResources;
-    VkDevice device;
-    std::vector<Pipeline> pipelines;
 
     EnginePeripheralsManager peripheralsManager;
+
     Camera mainCamera{0, 0, 2, 0, 1, 0, 90, 0};
 
     std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
 
     std::vector<VkSemaphore> imageAvailableSemaphores;
+
     std::vector<VkSemaphore> renderFinishedSemaphores;
+
     std::vector<VkFence> inFlightFences;
+
     uint32_t currentFrame = 0;
 
     bool framebufferResized = false;
+
     bool isRunning = true;
 
+  private:
     static void framebufferResizeCallback(GLFWwindow *window, int width,
                                           int height) {
         auto app = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(window));
@@ -93,8 +109,6 @@ class Engine {
     void initVulkan();
 
     void mainLoop();
-
-    void cleanup();
 
     void recreateSwapChain();
 
