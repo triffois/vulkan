@@ -16,24 +16,6 @@ void AppWindow::init(AppInstance *appInstance,
     this->appInstance = appInstance;
 }
 
-static void cursorPosCallback(GLFWwindow *window, double xpos, double ypos) {
-    static float lastCursorPosX{WINDOWWIDTH / 2.0};
-    static float lastCursorPosY{WINDOWHEIGHT / 2.0};
-
-    float dX = xpos - lastCursorPosX;
-    float dY = lastCursorPosY - ypos;
-    lastCursorPosX = xpos;
-    lastCursorPosY = ypos;
-
-    auto app = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(window));
-    app->getCamera()->ProcessMouseMovement(dX, dY);
-}
-
-static void scrollCallback(GLFWwindow *window, double xoffset, double yoffset) {
-    auto app = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(window));
-    app->getCamera()->ProcessMouseScroll(yoffset);
-}
-
 void AppWindow::initializeWindow(AppInstance *appInstance,
                                  ResizeCallback windowResizeCallback) {
     glfwInit();
@@ -47,8 +29,6 @@ void AppWindow::initializeWindow(AppInstance *appInstance,
 
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetCursorPos(window, WINDOWWIDTH / 2.0, WINDOWHEIGHT / 2.0);
-    glfwSetCursorPosCallback(window, cursorPosCallback);
-    glfwSetScrollCallback(window, scrollCallback);
 }
 
 void AppWindow::createSurface(const AppInstance *appInstance) {

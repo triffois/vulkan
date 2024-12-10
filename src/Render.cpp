@@ -4,13 +4,12 @@
 Render::Render(GlobalResources *globalResources, VkCommandBuffer commandBuffer,
                uint32_t imageIndex, uint32_t currentFrame,
                VkSemaphore imageAvailableSemaphore,
-               VkSemaphore renderFinishedSemaphore, VkFence inFlightFence,
-               Camera &camera)
+               VkSemaphore renderFinishedSemaphore, VkFence inFlightFence)
     : globalResources(globalResources), commandBuffer(commandBuffer),
       imageIndex(imageIndex), currentFrame(currentFrame),
       imageAvailableSemaphore(imageAvailableSemaphore),
       renderFinishedSemaphore(renderFinishedSemaphore),
-      inFlightFence(inFlightFence), camera(camera) {
+      inFlightFence(inFlightFence) {
     auto &swapChain = globalResources->getSwapChain();
 
     // Setup rendering info

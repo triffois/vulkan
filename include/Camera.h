@@ -5,14 +5,13 @@
 
 // courtesy - learn opengl
 
-enum class Camera_Movement { FORWARD, BACKWARD, LEFT, RIGHT, UP, DOWN };
-
 const float YAW = -90.0f;
 const float PITCH = 0.0f;
-const float SPEED = 1.5f;
-const float SENSITIVITYX = 0.1f;
-const float SENSITIVITYY = 0.2f;
-const float ZOOM = 45.0f;
+
+struct cameraOrientation {
+    float yaw;
+    float pitch;
+};
 
 class Camera {
   public:
@@ -22,24 +21,28 @@ class Camera {
     glm::vec3 Right;
     glm::vec3 WorldUp;
 
-    float Yaw;
-    float Pitch;
+    cameraOrientation Orientation;
 
-    float MovementSpeed{SPEED};
-    float MouseSensitivityX{SENSITIVITYX};
-    float MouseSensitivityY{SENSITIVITYY};
-    float Zoom{ZOOM};
+    cameraOrientation getOrientation() const { return Orientation; }
 
     explicit Camera(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-                    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), float yaw = YAW,
-                    float pitch = PITCH)
-        : Position{position}, WorldUp{up}, Yaw{yaw}, Pitch{pitch} {
+                    glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f),
+                    cameraOrientation Orientation = {YAW, PITCH})
+        : Position{position}, WorldUp{up}, Orientation{Orientation} {
         updateCameraVectors();
     }
     Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
            float yaw, float pitch)
-        : Position{posX, posY, posZ}, WorldUp{upX, upY, upZ}, Yaw{yaw},
-          Pitch{pitch} {
+        : Position{posX, posY, posZ}, WorldUp{upX, upY, upZ},
+          Orientation{yaw, pitch} {
+        ;
+        updateCameraVectors();
+    }
+
+    Camera(float posX, float posY, float posZ, float upX, float upY, float upZ,
+           cameraOrientation orientation)
+        : Position{posX, posY, posZ}, WorldUp{upX, upY, upZ},
+          Orientation{orientation} {
         ;
         updateCameraVectors();
     }
@@ -48,67 +51,35 @@ class Camera {
         return glm::lookAt(Position, Position + Front, Up);
     }
 
-    void ProcessKeyboard(Camera_Movement direction, double deltaTime,
-                         float speedMultiplier = 1.0f) {
-        float velocity = MovementSpeed * deltaTime * speedMultiplier;
-        glm::vec3 horizontalFront =
-            glm::normalize(glm::vec3(Front.x, 0.0f, Front.z));
-        glm::vec3 horizontalRight =
-            glm::normalize(glm::vec3(Right.x, 0.0f, Right.z));
-
-        switch (direction) {
-        case Camera_Movement::FORWARD:
-            Position += horizontalFront * velocity;
-            break;
-        case Camera_Movement::BACKWARD:
-            Position -= horizontalFront * velocity;
-            break;
-        case Camera_Movement::LEFT:
-            Position -= horizontalRight * velocity;
-            break;
-        case Camera_Movement::RIGHT:
-            Position += horizontalRight * velocity;
-            break;
-        case Camera_Movement::UP:
-            Position += WorldUp * velocity;
-            break;
-        case Camera_Movement::DOWN:
-            Position -= WorldUp * velocity;
-            break;
-        }
+    void SetPosition(glm::vec3 position) {
+        Position = position;
+        updateCameraVectors();
     }
 
-    void ProcessMouseMovement(float xoffset, float yoffset) {
-        xoffset *= MouseSensitivityX;
-        yoffset *= MouseSensitivityY;
-
-        Yaw += xoffset;
-        Pitch += yoffset;
-
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
+    void SetOrientation(float yaw, float pitch) {
+        Orientation.yaw = yaw;
+        Orientation.pitch = pitch;
 
         updateCameraVectors();
     }
 
-    void ProcessMouseScroll(float yoffset) {
-        Zoom -= (float)yoffset;
-        if (Zoom < 1.0f)
-            Zoom = 1.0f;
-        if (Zoom > 45.0f)
-            Zoom = 45.0f;
+    void SetOrientation(cameraOrientation orientation) {
+        Orientation = orientation;
+        updateCameraVectors();
     }
 
-    float getZoom() const { return Zoom; }
+    void setViewDirection(glm::vec3 viewDirection) {
+        Front = glm::normalize(viewDirection);
+        Right = glm::normalize(glm::cross(Front, WorldUp));
+        Up = glm::normalize(glm::cross(Right, Front));
+    }
 
   private:
     void updateCameraVectors() {
         glm::vec3 front;
-        front.x = cos(glm::radians(Yaw)) * cos(glm::radians(Pitch));
-        front.y = sin(glm::radians(Pitch));
-        front.z = sin(glm::radians(Yaw)) * cos(glm::radians(Pitch));
+        front.x = cos(glm::radians(Orientation.yaw)) * cos(glm::radians(Orientation.pitch));
+        front.y = sin(glm::radians(Orientation.pitch));
+        front.z = sin(glm::radians(Orientation.yaw)) * cos(glm::radians(Orientation.pitch));
 
         Front = glm::normalize(front);
         Right = glm::normalize(glm::cross(Front, WorldUp));

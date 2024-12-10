@@ -48,6 +48,8 @@ class Engine {
     TextureManager createTextureManager();
     Renderable shaded(Model &model, PipelineSettings &settings);
 
+    AppWindow &getWindow();
+
     void initializeEngineTeardown();
 
   private:
@@ -62,8 +64,6 @@ class Engine {
     GlobalResources globalResources;
 
     EnginePeripheralsManager peripheralsManager;
-
-    Camera mainCamera{0, 0, 2, 0, 1, 0, 90, 0};
 
     std::vector<std::unique_ptr<CommandBuffer>> commandBuffers;
 
@@ -103,8 +103,6 @@ class Engine {
 
         return buffer;
     }
-
-    void processKeyboardInput();
 
     void initVulkan();
 

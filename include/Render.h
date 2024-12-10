@@ -10,8 +10,7 @@ class Render {
     Render(GlobalResources *globalResources, VkCommandBuffer commandBuffer,
            uint32_t imageIndex, uint32_t currentFrame,
            VkSemaphore imageAvailableSemaphore,
-           VkSemaphore renderFinishedSemaphore, VkFence inFlightFence,
-           Camera &camera);
+           VkSemaphore renderFinishedSemaphore, VkFence inFlightFence);
     ~Render() = default;
 
     // Prevent copying
@@ -29,7 +28,6 @@ class Render {
     VkSemaphore imageAvailableSemaphore;
     VkSemaphore renderFinishedSemaphore;
     VkFence inFlightFence;
-    Camera &camera;
     bool isFinished = false;
 
     void recordRenderingCommands(Renderable &scene);
