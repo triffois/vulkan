@@ -1,4 +1,4 @@
-#include "Time.h"
+#include "EngineTime.h"
 #include <GLFW/glfw3.h>
 
 double Time::prevTimePoint = glfwGetTime();

@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
                 offsets.push_back(glm::vec3{i, 0, j});
             }
         }
-        model.scatter(offsets);
+        //model.scatter(offsets);
 
         // Create the uniform attachment with a lambda for updates
         auto uniformUpdator = [&engine, &textures](UniformBufferObject &ubo) {
