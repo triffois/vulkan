@@ -2,6 +2,13 @@
 
 A lightweight rendering engine built on top of Vulkan, designed to abstract away the low-level complexity while maintaining flexibility. The engine provides a simple API for loading and rendering 3D scenes while allowing direct access to the underlying graphics pipeline for experimentation.
 
+## Demo
+
+![sponza](https://github.com/user-attachments/assets/bab0a0d4-7fe5-4e28-940f-0063c3c69206)
+
+![1600_instanced_dreadnoughts](https://github.com/user-attachments/assets/a7850285-dc3a-4736-9e82-34b552ae423f)
+
+
 ## Building and Running
 
 ### Prerequisites
