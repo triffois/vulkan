@@ -1,6 +1,7 @@
 # Vulkan-based Rendering Engine
 
-A lightweight rendering engine built on top of Vulkan, designed to abstract away the low-level complexity while maintaining flexibility. The engine provides a simple API for loading and rendering 3D scenes while allowing direct access to the underlying graphics pipeline for experimentation.
+A lightweight rendering engine built on top of Vulkan, designed to abstract away the low-level complexity while maintaining flexibility. The engine provides a simple API for loading and rendering 3D scenes while allowing direct access to the underlying graphics pipeline for experimentation.       
+For a detailed overview of engine's architecture, please, check out the included `paper.pdf`.
 
 ## Demo
 
